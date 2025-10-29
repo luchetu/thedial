@@ -5,10 +5,17 @@ export default function TopNav() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
       <nav className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
         <Link href="/" className="group inline-flex items-center gap-2 font-sans text-xl md:text-2xl font-bold">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground text-base font-bold leading-none">
-            d
-          </span>
-          <span className="font-bold tracking-tight text-foreground">thedial</span>
+          <div className="relative inline-flex h-8 w-8 items-center justify-center">
+            {/* Signal waves */}
+            <div className="absolute inset-0 rounded-full border-2 border-primary/30"></div>
+            <div className="absolute inset-0 rounded-full border border-primary/20 scale-125"></div>
+            <div className="absolute inset-0 rounded-full border border-primary/10 scale-150"></div>
+            {/* Center circle with d */}
+            <span className="relative z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold leading-none">
+              d
+            </span>
+          </div>
+          <span className="font-bold tracking-tight text-foreground">Thedial</span>
         </Link>
         <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <Link href="/features" className="transition-colors hover:text-foreground">

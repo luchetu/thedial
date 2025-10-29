@@ -53,7 +53,7 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: #fd753e;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: #32302d;
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -70,8 +70,8 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: 20 30% 95%;
+  --sidebar-primary-foreground: 20 100% 20%;
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
@@ -104,8 +104,8 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: 20 30% 95%;
+  --sidebar-primary-foreground: 20 100% 20%;
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -118,5 +118,77 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Override sidebar hover and active states to use same styling */
+@layer components {
+  [data-active="true"],
+  [data-sidebar="menu-button"]:hover {
+    background-color: hsl(var(--sidebar-primary)) !important;
+    color: hsl(var(--sidebar-primary-foreground)) !important;
+  }
+
+  /* Make the icon in active and hover states use the full orange color */
+  [data-active="true"] svg,
+  [data-sidebar="menu-button"]:hover svg {
+    color: hsl(20 100% 62%) !important;
+  }
+}
+
+/* Input focus and placeholder styling */
+@layer components {
+  /* Focus state using primary color */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+    outline: none !important;
+  }
+
+  /* Faint placeholder text */
+  input::placeholder,
+  textarea::placeholder,
+  select::placeholder {
+    color: hsl(var(--muted-foreground) / 0.5) !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure placeholder is faint in all browsers */
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder,
+  select::-webkit-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.5) !important;
+    opacity: 1 !important;
+  }
+
+  input::-moz-placeholder,
+  textarea::-moz-placeholder,
+  select::-moz-placeholder {
+    color: hsl(var(--muted-foreground) / 0.5) !important;
+    opacity: 1 !important;
+  }
+
+  input:-ms-input-placeholder,
+  textarea:-ms-input-placeholder,
+  select:-ms-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.5) !important;
+    opacity: 1 !important;
+  }
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@layer utilities {
+  .animate-slide {
+    animation: slide 20s linear infinite;
   }
 }
