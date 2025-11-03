@@ -3,6 +3,7 @@
 import { 
   Home, 
   Phone, 
+  PhoneCall,
   Brain, 
   Users, 
   BarChart3, 
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +38,11 @@ const mainItems = [
     title: "Calls",
     url: "/dashboard/calls",
     icon: Phone,
+  },
+  {
+    title: "Phone Numbers",
+    url: "/dashboard/phone-numbers",
+    icon: PhoneCall,
   },
   {
     title: "AI Summaries",
@@ -66,6 +73,7 @@ const mainItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const logoutMutation = useLogout();
 
   return (
     <Sidebar collapsible="icon">
@@ -116,9 +124,13 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarMenuButton
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="cursor-pointer"
+            >
               <LogOut />
-              <span>Logout</span>
+              <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

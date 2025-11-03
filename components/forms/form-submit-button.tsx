@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { WaveLoader } from '@/components/ui/wave-loader';
 
 interface FormSubmitButtonProps {
   children: React.ReactNode;
@@ -24,9 +25,16 @@ export const FormSubmitButton = ({
       disabled={disabled || loading}
       variant={variant}
       size={size}
-      className={cn(className)}
+      className={cn('cursor-pointer', className)}
     >
-      {loading ? '...' : children}
+      {loading ? (
+        <span className="inline-flex items-center gap-2">
+          <WaveLoader />
+          <span>Processing...</span>
+        </span>
+      ) : (
+        children
+      )}
     </Button>
   );
 };

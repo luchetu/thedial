@@ -4,9 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { CallActivityChart } from "@/components/dashboard/Charts/CallActivityChart";
 
-export default function CallsPage() {
+export default function MissedCallsPage() {
   return (
     <div className="flex h-screen">
       {/* Secondary Menu */}
@@ -31,30 +30,19 @@ export default function CallsPage() {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Call Activity</CardTitle>
-                  <CardDescription>Weekly call activity overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CallActivityChart />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Calls</CardTitle>
-                  <CardDescription>Complete call history and management</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">All calls interface coming soon...</p>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Missed Calls</CardTitle>
+                <CardDescription>Calls you missed and need to return</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Missed calls interface coming soon...</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

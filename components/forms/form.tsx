@@ -3,7 +3,6 @@ import { FormProps } from '@/lib/forms/types';
 
 export const Form = <T extends Record<string, unknown> = Record<string, unknown>>({ 
   onSubmit, 
-  defaultValues, 
   className, 
   children 
 }: FormProps<T>) => {
@@ -12,7 +11,7 @@ export const Form = <T extends Record<string, unknown> = Record<string, unknown>
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onSubmit(e);
+        (onSubmit as unknown as React.FormEventHandler<HTMLFormElement>)(e);
       }}
       className={cn('space-y-6', className)}
     >

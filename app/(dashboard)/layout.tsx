@@ -1,17 +1,9 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { ProtectedDashboard } from "@/components/dashboard/ProtectedDashboard";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="flex-1">
-        {children}
-      </main>
-    </SidebarProvider>
-  );
+  return <ProtectedDashboard>{children}</ProtectedDashboard>;
 }

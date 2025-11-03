@@ -3,6 +3,10 @@ import { useForm, Form, FormField, FormSubmitButton, emailPattern } from "@/lib/
 import { GoogleAuthButton, AuthDivider } from "./auth-components";
 import { PasswordField } from "@/components/ui/password-field";
 import Link from "next/link";
+import { useLogin } from "@/features/auth/hooks/useLogin";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { ApiError } from "@/lib/http/client";
 
 interface LoginFormValues extends Record<string, unknown> {
   email: string;
@@ -10,11 +14,21 @@ interface LoginFormValues extends Record<string, unknown> {
 }
 
 export const LoginForm = () => {
+  const router = useRouter();
+  const loginMutation = useLogin();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     defaultValues: { email: '', password: '' },
     onSubmit: async (values) => {
-      console.log('Login values:', values);
-      // Handle login logic here
+      try {
+        setSubmitError(null);
+        await loginMutation.mutateAsync({ email: values.email, password: values.password });
+        router.replace("/dashboard");
+      } catch (e) {
+        const err = e as ApiError | Error;
+        const message = (err as ApiError)?.message || err.message || "Something went wrong";
+        setSubmitError(message);
+      }
     }
   });
 
@@ -94,9 +108,14 @@ export const LoginForm = () => {
                 )}
               </form.Field>
               
-              <FormSubmitButton className="w-full rounded-xl" size="lg">
+              <FormSubmitButton className="w-full rounded-xl" size="lg" disabled={loginMutation.isPending}>
                 Sign in
               </FormSubmitButton>
+              {submitError && (
+                <p className="text-sm text-destructive text-center" role="alert">
+                  {submitError}
+                </p>
+              )}
             </div>
           </Form>
 

@@ -4,6 +4,10 @@ import { GoogleAuthButton, AuthDivider } from "./auth-components";
 import { PasswordField } from "@/components/ui/password-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import { useCreateUser } from "@/features/users/hooks/useCreateUser";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { ApiError } from "@/lib/http/client";
 
 interface SignupFormValues extends Record<string, unknown> {
   firstName: string;
@@ -15,6 +19,9 @@ interface SignupFormValues extends Record<string, unknown> {
 }
 
 export const SignupForm = () => {
+  const router = useRouter();
+  const createUserMutation = useCreateUser();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<SignupFormValues>({
     defaultValues: { 
       firstName: '', 
@@ -25,8 +32,22 @@ export const SignupForm = () => {
       recordingConsent: false 
     },
     onSubmit: async (values) => {
-      console.log('Signup values:', values);
-      // Handle signup logic here
+      try {
+        setSubmitError(null);
+        const fullName = `${values.firstName} ${values.lastName}`.trim();
+        await createUserMutation.mutateAsync({
+          fullName,
+          email: values.email,
+          password: values.password,
+          authProvider: "email",
+          recordingConsent: Boolean(values.recordingConsent),
+        });
+        router.replace("/auth/login");
+      } catch (e) {
+        const err = e as ApiError | Error;
+        const message = (err as ApiError)?.message || err.message || "Something went wrong";
+        setSubmitError(message);
+      }
     }
   });
 
@@ -144,13 +165,13 @@ export const SignupForm = () => {
                   onChange: ({ value }) => {
                     const stringValue = String(value || '');
                     if (!stringValue || stringValue.trim() === '') return 'This field is required';
-                    if (!passwordPattern.test(stringValue)) return 'Password must contain at least 8 characters with uppercase, lowercase, and number';
+                    if (!passwordPattern.test(stringValue)) return 'Must be at least 6 characters';
                     return undefined;
                   },
                   onBlur: ({ value }) => {
                     const stringValue = String(value || '');
                     if (!stringValue || stringValue.trim() === '') return 'This field is required';
-                    if (!passwordPattern.test(stringValue)) return 'Password must contain at least 8 characters with uppercase, lowercase, and number';
+                    if (!passwordPattern.test(stringValue)) return 'Must be at least 6 characters';
                     return undefined;
                   }
                 }}
@@ -241,9 +262,14 @@ export const SignupForm = () => {
                 )}
               </form.Field>
               
-              <FormSubmitButton className="w-full rounded-xl" size="lg">
+              <FormSubmitButton className="w-full rounded-xl" size="lg" disabled={createUserMutation.isPending}>
                 Create account
               </FormSubmitButton>
+              {submitError && (
+                <p className="text-sm text-destructive text-center" role="alert">
+                  {submitError}
+                </p>
+              )}
             </div>
           </Form>
 

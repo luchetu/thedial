@@ -1,12 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { CallActivityChart } from "@/components/dashboard/Charts/CallActivityChart";
+import { CallInterface } from "@/components/livekit/CallInterface";
+import { OutboundCallDialer } from "@/components/livekit/OutboundCallDialer";
 
-export default function CallsPage() {
+export default function DialPage() {
+  const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string } | null>(null);
+
+  if (activeCall) {
+    return (
+      <CallInterface
+        roomName={activeCall.roomName}
+        identity={activeCall.identity}
+        onDisconnect={() => setActiveCall(null)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen">
       {/* Secondary Menu */}
@@ -31,30 +45,19 @@ export default function CallsPage() {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Call Activity</CardTitle>
-                  <CardDescription>Weekly call activity overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CallActivityChart />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Calls</CardTitle>
-                  <CardDescription>Complete call history and management</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">All calls interface coming soon...</p>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Make a Call</CardTitle>
+                <CardDescription>Start an outbound call to any phone number</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OutboundCallDialer onCallStart={setActiveCall} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
