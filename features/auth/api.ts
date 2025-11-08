@@ -16,4 +16,11 @@ export function getCurrentUser() {
   return http<CurrentUser>(`/users/me`);
 }
 
+export function updateCurrentUser(data: { fullName?: string }) {
+  return http<CurrentUser>(`/users/me`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhoneNumbers";
 import { createOutboundCall } from "@/features/livekit/api";
+import { getContact } from "@/features/contacts/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,13 +20,15 @@ import type { ApiError } from "@/lib/http/client";
 
 interface OutboundCallDialerProps {
   onCallStart: (call: { roomName: string; identity: string }) => void;
+  contactId?: string;
 }
 
-export function OutboundCallDialer({ onCallStart }: OutboundCallDialerProps) {
+export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDialerProps) {
   const [destinationNumber, setDestinationNumber] = useState("");
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingContact, setIsLoadingContact] = useState(false);
   const { data: user } = useCurrentUser();
   const { 
     data: userPhoneNumbers, 
@@ -39,6 +42,33 @@ export function OutboundCallDialer({ onCallStart }: OutboundCallDialerProps) {
     (pn) => pn.status === "active"
   );
 
+  const formatPhoneNumber = (value: string) => {
+    // Allow digits, spaces, dashes, parentheses, and +
+    const cleaned = value.replace(/[^\d+\-()\s]/g, "");
+    return cleaned;
+  };
+
+  const normalizeToE164 = (phone: string): string => {
+    // Remove all non-digit characters except +
+    let cleaned = phone.replace(/[^\d+]/g, "");
+    
+    // If it doesn't start with +, try to format it
+    if (!cleaned.startsWith("+")) {
+      // Remove leading zeros
+      cleaned = cleaned.replace(/^0+/, "");
+      
+      // If it's 10 digits, assume US number (+1)
+      if (cleaned.length === 10) {
+        cleaned = `+1${cleaned}`;
+      } else if (cleaned.length > 0) {
+        // Add + if missing
+        cleaned = `+${cleaned}`;
+      }
+    }
+    
+    return cleaned;
+  };
+
   // Auto-select first phone number if available and none selected
   useEffect(() => {
     if (activePhoneNumbers.length > 0 && !selectedPhoneNumberId && !isLoadingPhoneNumbers) {
@@ -46,11 +76,26 @@ export function OutboundCallDialer({ onCallStart }: OutboundCallDialerProps) {
     }
   }, [activePhoneNumbers, selectedPhoneNumberId, isLoadingPhoneNumbers]);
 
-  const formatPhoneNumber = (value: string) => {
-    // Allow digits, spaces, dashes, parentheses, and +
-    const cleaned = value.replace(/[^\d+\-()\s]/g, "");
-    return cleaned;
-  };
+  // Load contact and pre-populate phone number if contactId is provided
+  useEffect(() => {
+    if (contactId) {
+      setIsLoadingContact(true);
+      getContact(contactId)
+        .then((contact) => {
+          if (contact.phone_number) {
+            // Format the phone number for display
+            const formatted = formatPhoneNumber(contact.phone_number);
+            setDestinationNumber(formatted);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load contact:", err);
+        })
+        .finally(() => {
+          setIsLoadingContact(false);
+        });
+    }
+  }, [contactId]); // Only depend on contactId, not destinationNumber
 
   const handleDial = async () => {
     if (!destinationNumber.trim() || !user || !selectedPhoneNumberId) return;
@@ -62,13 +107,23 @@ export function OutboundCallDialer({ onCallStart }: OutboundCallDialerProps) {
       return;
     }
     
+    // Normalize phone number to E.164 format
+    const normalizedPhone = normalizeToE164(destinationNumber.trim());
+    
+    // Validate E.164 format (basic check: + followed by 1-15 digits)
+    const e164Pattern = /^\+[1-9]\d{1,14}$/;
+    if (!e164Pattern.test(normalizedPhone)) {
+      setError("Please enter a valid phone number in international format (e.g., +14155551234)");
+      return;
+    }
+    
     setIsConnecting(true);
     setError(null);
     
     try {
       // Call the backend API to create outbound call with AI agent
       const result = await createOutboundCall({
-        phoneNumber: destinationNumber.trim(),
+        phoneNumber: normalizedPhone,
         phoneNumberId: selectedPhoneNumberId, // Backend will look up SIP trunk from this
         agentName: "telephony-agent",
         userIdentity: `user-${user.id}`,
@@ -145,20 +200,27 @@ export function OutboundCallDialer({ onCallStart }: OutboundCallDialerProps) {
           Call To
         </Label>
         <div className="flex gap-2">
-          <Input
-            id="destination-number"
-            type="tel"
-            placeholder="+1 (555) 123-4567"
-            value={destinationNumber}
-            onChange={(e) => setDestinationNumber(formatPhoneNumber(e.target.value))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && destinationNumber.trim() && selectedPhoneNumberId) {
-                handleDial();
-              }
-            }}
-            className="flex-1"
-            disabled={!selectedPhoneNumberId || isConnecting}
-          />
+          <div className="flex-1 space-y-1">
+            <Input
+              id="destination-number"
+              type="tel"
+              placeholder="+1 (555) 123-4567 or (555) 123-4567"
+              value={destinationNumber}
+              onChange={(e) => setDestinationNumber(formatPhoneNumber(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && destinationNumber.trim() && selectedPhoneNumberId) {
+                  handleDial();
+                }
+              }}
+              className="w-full"
+              disabled={!selectedPhoneNumberId || isConnecting}
+            />
+            {destinationNumber.trim() && (
+              <p className="text-xs text-muted-foreground">
+                Will call: {normalizeToE164(destinationNumber.trim()) || "Enter a valid number"}
+              </p>
+            )}
+          </div>
           <Button
             onClick={handleDial}
             disabled={!destinationNumber.trim() || !selectedPhoneNumberId || isConnecting}

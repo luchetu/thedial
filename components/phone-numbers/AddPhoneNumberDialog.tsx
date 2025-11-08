@@ -118,7 +118,7 @@ export function AddPhoneNumberDialog({
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleAction}>
+          <Button variant="secondary" className="text-white" onClick={handleAction}>
             {getActionButtonText(selectedOption)}
           </Button>
         </DialogFooter>

@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Phone, PhoneIncoming, PhoneOutgoing, Clock, Tag, FileText, Play, type LucideIcon } from "lucide-react"
+import { Phone, PhoneIncoming, PhoneOutgoing, Clock, Tag, FileText, Play, Sparkles, type LucideIcon } from "lucide-react"
+import Link from "next/link"
 
 const callLogsData = [
   {
@@ -180,10 +181,18 @@ export function CallLogsList() {
                           </Button>
                         )}
                         {call.transcribed && (
-                          <Button variant="outline" size="sm">
-                            <FileText className="h-4 w-4 mr-1" />
-                            View Full
-                          </Button>
+                          <>
+                            <Button variant="outline" size="sm">
+                              <FileText className="h-4 w-4 mr-1" />
+                              View Full
+                            </Button>
+                            <Link href="/dashboard/calls/ai-assistant">
+                              <Button variant="outline" size="sm">
+                                <Sparkles className="h-4 w-4 mr-1" />
+                                Ask AI
+                              </Button>
+                            </Link>
+                          </>
                         )}
                       </div>
                     </div>

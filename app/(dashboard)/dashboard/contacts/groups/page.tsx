@@ -69,7 +69,7 @@ export default function ContactGroupsPage() {
                   <h2 className="text-xl font-semibold mb-2">Contact Groups</h2>
                   <p className="text-muted-foreground">Organize your contacts into groups for better management</p>
                 </div>
-                <Button className="flex items-center gap-2">
+                <Button variant="secondary" className="flex items-center gap-2 text-white">
                   <Plus className="h-4 w-4" />
                   Create Group
                 </Button>
@@ -113,13 +113,13 @@ export default function ContactGroupsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-3">
-                    <Button variant="outline" size="sm">
+                    <Button variant="secondary" size="sm" className="text-white">
                       Bulk Add Contacts
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="secondary" size="sm" className="text-white">
                       Export Groups
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="secondary" size="sm" className="text-white">
                       Import Groups
                     </Button>
                   </div>

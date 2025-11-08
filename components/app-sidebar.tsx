@@ -3,18 +3,21 @@
 import { 
   Home, 
   Phone, 
-  PhoneCall,
-  Brain, 
   Users, 
-  BarChart3, 
   Settings, 
-  HelpCircle, 
   LogOut,
   User
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import dynamic from "next/dynamic";
+
+// Dynamically import admin menu item with SSR disabled to avoid hydration errors
+const AdminSettingsMenuItem = dynamic(
+  () => import("@/components/admin/AdminSettingsMenuItem").then((mod) => ({ default: mod.AdminSettingsMenuItem })),
+  { ssr: false }
+);
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/ui/logo";
 
 // Main menu items - flat structure
 const mainItems = [
@@ -40,34 +44,14 @@ const mainItems = [
     icon: Phone,
   },
   {
-    title: "Phone Numbers",
-    url: "/dashboard/phone-numbers",
-    icon: PhoneCall,
-  },
-  {
-    title: "AI Summaries",
-    url: "/dashboard/summaries",
-    icon: Brain,
-  },
-  {
     title: "Contacts",
     url: "/dashboard/contacts",
     icon: Users,
   },
   {
-    title: "Analytics (Pro)",
-    url: "/dashboard/analytics",
-    icon: BarChart3,
-  },
-  {
     title: "Settings",
     url: "/dashboard/settings",
     icon: Settings,
-  },
-  {
-    title: "Help",
-    url: "/dashboard/help",
-    icon: HelpCircle,
   },
 ];
 
@@ -78,18 +62,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center px-2 py-2">
-          <div className="relative inline-flex h-8 w-8 items-center justify-center">
-            {/* Signal waves */}
-            <div className="absolute inset-0 rounded-full border-2 border-primary/30"></div>
-            <div className="absolute inset-0 rounded-full border border-primary/20 scale-125"></div>
-            <div className="absolute inset-0 rounded-full border border-primary/10 scale-150"></div>
-            {/* Center circle with d */}
-            <span className="relative z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold leading-none">
-              d
-            </span>
-          </div>
-          <span className="ml-2 font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden">Thedial</span>
+        <div className="flex items-center">
+          <Logo size={48} className="text-primary" />
+          <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden ml-0 leading-none" style={{ transform: 'translateY(-6px)' }}>thedial</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -97,8 +72,18 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => {
-                const isActive = pathname === item.url || 
-                  (item.url !== "/dashboard" && pathname.startsWith(item.url));
+                let isActive = false;
+                
+                if (item.url === "/dashboard") {
+                  isActive = pathname === item.url;
+                } else if (item.url === "/dashboard/settings") {
+                  isActive = pathname === item.url || 
+                    (pathname.startsWith("/dashboard/settings/") && 
+                     !pathname.startsWith("/dashboard/settings/admin"));
+                } else {
+                  isActive = pathname === item.url || 
+                    (item.url !== "/dashboard" && pathname.startsWith(item.url));
+                }
                 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -111,6 +96,8 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+              {/* Admin Settings - dynamically imported with SSR disabled */}
+              <AdminSettingsMenuItem />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

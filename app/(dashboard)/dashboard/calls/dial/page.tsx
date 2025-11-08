@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
@@ -8,8 +9,10 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CallInterface } from "@/components/livekit/CallInterface";
 import { OutboundCallDialer } from "@/components/livekit/OutboundCallDialer";
 
-export default function DialPage() {
+function DialContent() {
   const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string } | null>(null);
+  const searchParams = useSearchParams();
+  const contactId = searchParams.get("contact");
 
   if (activeCall) {
     return (
@@ -39,6 +42,7 @@ export default function DialPage() {
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <h1 className="text-lg font-semibold">Dial</h1>
           <div className="flex-1" />
         </header>
         
@@ -51,13 +55,27 @@ export default function DialPage() {
                 <CardDescription>Start an outbound call to any phone number</CardDescription>
               </CardHeader>
               <CardContent>
-                <OutboundCallDialer onCallStart={setActiveCall} />
+                <OutboundCallDialer onCallStart={setActiveCall} contactId={contactId || undefined} />
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DialPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen">
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <DialContent />
+    </Suspense>
   );
 }
 

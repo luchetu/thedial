@@ -1,0 +1,28 @@
+<svg
+  width="256"
+  height="256"
+  viewBox="0 0 256 256"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-labelledby="title"
+>
+  <title id="title">thedial broadcast logo</title>
+  <rect width="256" height="256" fill="none" />
+  
+  {/* Waves */}
+  <g fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round">
+    <circle cx="128" cy="88" r="20" />
+    <circle cx="128" cy="88" r="40" />
+    <circle cx="128" cy="88" r="60" />
+  </g>
+  
+  {/* Tower */}
+  <g fill="currentColor">
+    {/* Tower body (tapered, elegant) */}
+    <path d="M122 88 L128 208 L134 88 Z" />
+    {/* Top signal source */}
+    <circle cx="128" cy="88" r="8" />
+  </g>
+</svg>
+
+

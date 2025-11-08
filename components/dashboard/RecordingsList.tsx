@@ -6,10 +6,26 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Play, Pause, Volume2, Search, Tag, Clock, Phone, Calendar } from "lucide-react"
+import { Play, Pause, Volume2, Search, Tag, Clock, Phone, Calendar, Sparkles } from "lucide-react"
+import Link from "next/link"
+
+type Recording = {
+  id: string;
+  callId: string;
+  duration: string;
+  timestamp: string;
+  phoneNumber: string;
+  direction: "inbound" | "outbound";
+  transcript: string;
+  summary: string;
+  aiTags: string[];
+  keywords: string[];
+  recordingUrl: string;
+  isPlaying: boolean;
+};
 
 // Sample recordings data
-const recordingsData = [
+const recordingsData: Recording[] = [
   {
     id: "1",
     callId: "call_001",
@@ -75,7 +91,7 @@ const directionConfig: Record<string, { label: string; color: string }> = {
 
 export function RecordingsList() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRecording, setSelectedRecording] = useState<any>(null)
+  const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
   const [recordings, setRecordings] = useState(recordingsData)
 
   const filteredRecordings = recordings.filter(recording => {
@@ -155,6 +171,13 @@ export function RecordingsList() {
                       {recording.isPlaying ? "Pause" : "Play"}
                     </Button>
                     
+                    <Link href="/dashboard/calls/ai-assistant">
+                      <Button variant="outline" size="sm">
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        Ask AI
+                      </Button>
+                    </Link>
+                    
                     <Sheet>
                       <SheetTrigger asChild>
                         <Button 
@@ -177,7 +200,7 @@ export function RecordingsList() {
                             <h4 className="font-medium mb-2">AI Tags:</h4>
                             <div className="flex flex-wrap gap-2">
                               {recording.aiTags.map((tag: string) => (
-                                <Badge key={tag} variant="secondary">
+                                <Badge key={tag} variant="outline" className="bg-muted/50">
                                   <Tag className="h-3 w-3 mr-1" />
                                   {tag}
                                 </Badge>
@@ -221,7 +244,7 @@ export function RecordingsList() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {recording.aiTags.map((tag: string) => (
-                      <Badge key={tag} variant="secondary">
+                      <Badge key={tag} variant="outline" className="bg-muted/50">
                         {tag}
                       </Badge>
                     ))}

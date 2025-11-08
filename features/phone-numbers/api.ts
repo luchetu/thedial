@@ -69,3 +69,28 @@ export function getUserPhoneNumbers() {
   return http<UserPhoneNumber[]>(`/phone-numbers`)
 }
 
+export function getPhoneNumber(id: string) {
+  return http<UserPhoneNumber>(`/phone-numbers/${id}`)
+}
+
+export function updatePhoneNumberFriendlyName(id: string, friendlyName: string) {
+  return http<void>(`/phone-numbers/${id}/friendly-name`, {
+    method: "POST",
+    body: JSON.stringify({ friendlyName }),
+  })
+}
+
+export function updatePhoneNumberForwarding(id: string, forwardingNumber: string) {
+  return http<void>(`/phone-numbers/${id}/forwarding`, {
+    method: "POST",
+    body: JSON.stringify({ forwardingNumber }),
+  })
+}
+
+export function updatePhoneNumberAIAssistant(id: string, enabled: boolean) {
+  return http<void>(`/phone-numbers/${id}/ai-assistant`, {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  })
+}
+

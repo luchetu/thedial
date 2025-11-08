@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Phone, PhoneOff, Mic, PhoneCall } from "lucide-react";
+import { Phone, PhoneOff, Mic, PhoneCall, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const callsMenuItems = [
@@ -26,6 +26,11 @@ const callsMenuItems = [
     href: "/dashboard/calls/dial",
     icon: PhoneCall,
   },
+  {
+    title: "AI Assistant",
+    href: "/dashboard/calls/ai-assistant",
+    icon: Sparkles,
+  },
 ];
 
 export function CallsSecondaryMenu() {
@@ -46,11 +51,11 @@ export function CallsSecondaryMenu() {
             key={item.title}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+              "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors border",
               "hover:bg-primary/10 hover:text-primary",
               isActive 
-                ? "bg-primary text-primary-foreground shadow-sm" 
-                : "text-muted-foreground"
+                ? "bg-primary/10 border-primary text-primary shadow-sm" 
+                : "border-transparent text-muted-foreground"
             )}
           >
             <Icon className="h-4 w-4" />
