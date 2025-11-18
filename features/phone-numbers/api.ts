@@ -94,3 +94,42 @@ export function updatePhoneNumberAIAssistant(id: string, enabled: boolean) {
   })
 }
 
+// Phone Number Verification APIs
+export interface InitiateVerificationInput {
+  userId: string
+  phoneNumber: string
+}
+
+export interface InitiateVerificationResponse {
+  success: boolean
+  message: string
+}
+
+export function initiatePhoneVerification(input: InitiateVerificationInput) {
+  return http<InitiateVerificationResponse>(`/phone-numbers/verify/initiate`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export interface VerifyPhoneNumberInput {
+  userId: string
+  phoneNumber: string
+  code: string
+}
+
+export interface VerifyPhoneNumberResponse {
+  id: string
+  phoneNumber: string
+  friendlyName: string
+  country: string
+  status: string
+}
+
+export function verifyPhoneNumber(input: VerifyPhoneNumberInput) {
+  return http<VerifyPhoneNumberResponse>(`/phone-numbers/verify/confirm`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+

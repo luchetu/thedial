@@ -10,19 +10,9 @@ import { CallInterface } from "@/components/livekit/CallInterface";
 import { OutboundCallDialer } from "@/components/livekit/OutboundCallDialer";
 
 function DialContent() {
-  const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string; callerNumber?: string; callerName?: string } | null>(null);
   const searchParams = useSearchParams();
   const contactId = searchParams.get("contact");
-
-  if (activeCall) {
-    return (
-      <CallInterface
-        roomName={activeCall.roomName}
-        identity={activeCall.identity}
-        onDisconnect={() => setActiveCall(null)}
-      />
-    );
-  }
 
   return (
     <div className="flex h-screen">
@@ -48,19 +38,37 @@ function DialContent() {
         
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <Card>
+          <div className="p-6 flex items-center justify-center">
+            <Card className="w-full max-w-lg">
               <CardHeader>
                 <CardTitle>Make a Call</CardTitle>
                 <CardDescription>Start an outbound call to any phone number</CardDescription>
               </CardHeader>
               <CardContent>
-                <OutboundCallDialer onCallStart={setActiveCall} contactId={contactId || undefined} />
+                <OutboundCallDialer 
+                  onCallStart={setActiveCall}
+                  contactId={contactId || undefined}
+                  activeCall={activeCall}
+                />
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Call Modal */}
+      {activeCall && (
+        <CallInterface
+          roomName={activeCall.roomName}
+          identity={activeCall.identity}
+          callerName={activeCall.callerName}
+          callerNumber={activeCall.callerNumber}
+          onDisconnect={() => {
+            console.log("🔴 DialPage: Call disconnected");
+            setActiveCall(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,240 @@
-// Twilio Trunk Types
+// Plan Types
+export type Plan = {
+  id: string;
+  code: string;
+  name?: string;
+  billingProductId?: string;
+  monthlyPriceCents: number;
+  includedRealtimeMinutes: number;
+  includedTranscriptionMinutes: number;
+  includedPstnMinutes: number;
+  includedAiMinutes: number;
+  includedPhoneNumbers: number;
+  perNumberMonthlyPriceCents: number;
+  defaultRoutingProfileTemplateId?: string;
+  allowedCountries: string[];
+  defaultRecordingPolicy?: Record<string, unknown>;
+  complianceFeatures?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type PlanPayloadBase = {
+  name?: string;
+  billingProductId?: string;
+  monthlyPriceCents?: number;
+  includedRealtimeMinutes?: number;
+  includedTranscriptionMinutes?: number;
+  includedPstnMinutes?: number;
+  includedAiMinutes?: number;
+  includedPhoneNumbers?: number;
+  perNumberMonthlyPriceCents?: number;
+  defaultRoutingProfileTemplateId?: string;
+  allowedCountries?: string[];
+  defaultRecordingPolicy?: Record<string, unknown>;
+  complianceFeatures?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+};
+
+export type CreatePlanRequest = PlanPayloadBase & {
+  code: string;
+};
+
+export type UpdatePlanRequest = PlanPayloadBase & {
+  code?: string;
+};
+
+// Routing Profile Types
+export type RoutingProfile = {
+  id: string;
+  name: string;
+  // planCode removed - routing profiles are now independent
+  country: string;
+  region?: string; // Support for region-based routing
+  outboundProvider: string;
+  outboundTrunkRef?: string;
+  outboundProviderConfig?: Record<string, unknown>;
+  inboundProvider?: string;
+  inboundTrunkRef?: string;
+  inboundProviderConfig?: Record<string, unknown>;
+  dispatchProvider?: string;
+  dispatchRuleRef?: string;
+  dispatchMetadata?: Record<string, unknown>;
+  complianceRequirements?: Record<string, unknown>;
+  recordingPolicy?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreateRoutingProfileRequest = {
+  name: string;
+  planCode?: string; // Optional - if provided, creates mapping automatically
+  country?: string; // Make optional if region is provided
+  region?: string; // Add region support
+  outboundProvider: string;
+  outboundTrunkRef?: string;
+  outboundProviderConfig?: Record<string, unknown>;
+  inboundProvider?: string;
+  inboundTrunkRef?: string;
+  inboundProviderConfig?: Record<string, unknown>;
+  dispatchProvider?: string;
+  dispatchRuleRef?: string;
+  dispatchMetadata?: Record<string, unknown>;
+  complianceRequirements?: Record<string, unknown>;
+  recordingPolicy?: Record<string, unknown>;
+};
+
+// Plan Routing Profile Mapping Types
+export type PlanRoutingProfile = {
+  id: string;
+  planCode: string;
+  routingProfileId: string;
+  country?: string;
+  region?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreatePlanRoutingProfileRequest = {
+  planCode: string;
+  routingProfileId: string;
+  country?: string;
+  region?: string;
+};
+
+export type UpdatePlanRoutingProfileRequest = {
+  routingProfileId?: string;
+  country?: string;
+  region?: string;
+};
+
+// User Routing Profile Override Types (for future use)
+export type UserRoutingProfileOverride = {
+  id: string;
+  userId: string;
+  routingProfileId: string;
+  country?: string;
+  region?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpdateRoutingProfileRequest = Partial<CreateRoutingProfileRequest>;
+
+// Unified Trunk Types (Provider-Agnostic)
+// CRITICAL: Never expose provider names (twilio, livekit) in these types
+export type Trunk = {
+  id: string;
+  name: string;
+  type: "twilio" | "livekit_outbound" | "livekit_inbound" | "custom";
+  direction: "outbound" | "inbound" | "bidirectional";
+  status: "active" | "inactive" | "pending";
+  metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TrunkConfiguration = {
+  id: string;
+  trunkId: string;
+  provider: string;
+  configurationType: string;
+  configurationData: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreateTrunkRequest = {
+  name: string;
+  type: "twilio" | "livekit_outbound" | "livekit_inbound" | "custom";
+  direction: "outbound" | "inbound" | "bidirectional";
+  provider: "twilio" | "livekit" | "custom";
+  externalId?: string;
+  status?: "active" | "inactive" | "pending";
+  metadata?: Record<string, unknown>;
+  // LiveKit Outbound fields
+  address?: string; // SIP domain (e.g., "my-trunk.pstn.twilio.com")
+  numbers?: string[]; // Phone numbers array (e.g., ["+15105550123"] or ["*"])
+  authUsername?: string; // SIP authentication username
+  authPassword?: string; // SIP authentication password
+  // LiveKit Inbound fields
+  inboundNumbers?: string[]; // Phone numbers ([] for any number, or specific numbers)
+  allowedNumbers?: string[]; // Restrict caller numbers
+  allowedAddresses?: string[]; // Restrict IP addresses
+  inboundAuthUsername?: string; // Optional SIP username
+  inboundAuthPassword?: string; // Optional SIP password
+  krispEnabled?: boolean; // Enable noise cancellation
+  // Twilio fields
+  terminationSipDomain?: string; // SIP domain (e.g., "my-trunk.pstn.twilio.com")
+  credentialMode?: "existing" | "create"; // Credential list mode
+  credentialListSid?: string; // Existing credential list SID (if mode="existing")
+  credentialListName?: string; // New credential list name (if mode="create")
+  twilioUsername?: string; // Username for credentials (if mode="create")
+  twilioPassword?: string; // Password for credentials (if mode="create")
+};
+
+export type UpdateTrunkRequest = {
+  name?: string;
+  type?: "twilio" | "livekit_outbound" | "livekit_inbound" | "custom";
+  direction?: "outbound" | "inbound" | "bidirectional";
+  provider?: "twilio" | "livekit" | "custom";
+  externalId?: string;
+  status?: "active" | "inactive" | "pending";
+  metadata?: Record<string, unknown>;
+  // LiveKit Outbound fields
+  address?: string;
+  numbers?: string[];
+  authUsername?: string;
+  authPassword?: string;
+  // LiveKit Inbound fields
+  inboundNumbers?: string[];
+  allowedNumbers?: string[];
+  allowedAddresses?: string[];
+  inboundAuthUsername?: string;
+  inboundAuthPassword?: string;
+  krispEnabled?: boolean;
+  // Twilio fields
+  terminationSipDomain?: string;
+  credentialMode?: "existing" | "create";
+  credentialListSid?: string;
+  credentialListName?: string;
+  twilioUsername?: string;
+  twilioPassword?: string;
+};
+
+export type ConfigureTrunkRequest = {
+  // LiveKit Outbound fields
+  address?: string; // SIP domain
+  numbers?: string[]; // Phone numbers array
+  authUsername?: string; // SIP username
+  authPassword?: string; // SIP password
+
+  // LiveKit Inbound fields
+  inboundNumbers?: string[]; // Phone numbers ([] for any)
+  allowedNumbers?: string[]; // Restrict caller numbers
+  allowedAddresses?: string[]; // Restrict IP addresses
+  inboundAuthUsername?: string; // Optional SIP username
+  inboundAuthPassword?: string; // Optional SIP password
+  krispEnabled?: boolean; // Enable noise cancellation
+
+  // Twilio fields
+  terminationSipDomain?: string; // SIP domain
+  credentialMode?: "existing" | "create"; // Credential list mode
+  credentialListSid?: string; // Existing credential list SID
+  credentialListName?: string; // New credential list name
+  twilioUsername?: string; // Username for credentials
+  twilioPassword?: string; // Password for credentials
+};
+
+export type ListTrunksFilters = {
+  provider?: string;
+  type?: "twilio" | "livekit_outbound" | "livekit_inbound" | "custom";
+  direction?: "outbound" | "inbound" | "bidirectional";
+  status?: "active" | "inactive" | "pending";
+};
+
+// Twilio Trunk Types (DEPRECATED - Use unified Trunk type instead)
 // Note: This is a Twilio Elastic SIP Trunk (created in Twilio, can be managed programmatically)
 export type TwilioTrunk = {
   id: string; // Twilio Trunk SID

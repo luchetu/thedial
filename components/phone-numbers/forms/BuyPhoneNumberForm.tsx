@@ -28,7 +28,11 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser"
 import type { AvailablePhoneNumber } from "@/features/phone-numbers/types"
 import type { ApiError } from "@/lib/http/client"
 
-export function BuyPhoneNumberForm() {
+interface BuyPhoneNumberFormProps {
+  onSuccess?: () => void;
+}
+
+export function BuyPhoneNumberForm({ onSuccess }: BuyPhoneNumberFormProps = {}) {
   const [regionOpen, setRegionOpen] = React.useState(false)
   const [selectedRegion, setSelectedRegion] = React.useState("")
   const [areaCode, setAreaCode] = React.useState("")
@@ -78,6 +82,8 @@ export function BuyPhoneNumberForm() {
       }
       // Success - clear selection
       setSelectedNumbers(new Set())
+      // Close dialog if callback provided
+      onSuccess?.()
     } catch (err) {
       const error = err as ApiError | Error
       const message = (error as ApiError)?.message || error.message || "Failed to buy phone numbers"
@@ -101,7 +107,7 @@ export function BuyPhoneNumberForm() {
       <div>
         <h3 className="text-sm font-medium mb-2">Buy Phone Number</h3>
         <p className="text-sm text-muted-foreground">
-          Select a country to search for available phone numbers.
+          Choose a country to browse available phone numbers.
         </p>
       </div>
 
@@ -110,7 +116,7 @@ export function BuyPhoneNumberForm() {
         <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
         <div className="flex-1">
           <p className="text-xs text-muted-foreground">
-            Select a country to view available phone numbers. You can optionally filter by area code.
+            Choose a country to view available phone numbers. You can optionally filter by area code.
           </p>
         </div>
       </div>
@@ -133,7 +139,7 @@ export function BuyPhoneNumberForm() {
               >
                 {selectedRegion
                   ? regionsToDisplay.find((region) => region.countryCode === selectedRegion)?.countryName
-                  : "Select a country..."}
+                  : "Choose a country to search"}
                 <ChevronsUpDown className="opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -145,26 +151,27 @@ export function BuyPhoneNumberForm() {
                   {regionsError && <CommandEmpty>Error loading regions.</CommandEmpty>}
                   {!isLoadingRegions && !regionsError && regionsToDisplay.length === 0 && <CommandEmpty>No regions found.</CommandEmpty>}
                   <CommandGroup> 
-                    {regionsToDisplay.map((region) => (
-                      <CommandItem
-                        key={region.countryCode}
-                        value={`${region.countryCode} ${region.countryName}`}
-                        onSelect={(currentValue) => {
-                          // Extract the country code (first part before space)
-                          const code = currentValue.split(" ")[0]
-                          setSelectedRegion(code === selectedRegion ? "" : code)
-                          setRegionOpen(false)
-                        }}
-                      >
-                        {region.countryName}
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            selectedRegion === region.countryCode ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
+                    {regionsToDisplay.map((region) => {
+                      const isSelected = selectedRegion === region.countryCode;
+                      return (
+                        <CommandItem
+                          key={region.countryCode}
+                          value={region.countryCode}
+                          onSelect={() => {
+                            setSelectedRegion(isSelected ? "" : region.countryCode);
+                            setRegionOpen(false);
+                          }}
+                        >
+                          {region.countryName}
+                          <Check
+                            className={cn(
+                              "ml-auto",
+                              isSelected ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      );
+                    })}
                   </CommandGroup>
                 </CommandList>
               </Command>

@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SettingsSecondaryMenu } from "@/components/settings-secondary-menu";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,17 +80,6 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="flex h-screen">
-      {/* Secondary Menu */}
-      <div className="w-64 shrink-0 border-r bg-muted/10 flex flex-col">
-        <div className="px-6 pt-6 pb-2 shrink-0">
-          <h1 className="text-lg font-semibold mb-2">Settings</h1>
-        </div>
-        <Separator className="mb-2" />
-        <div className="flex-1 px-6 pb-6">
-          <SettingsSecondaryMenu />
-        </div>
-      </div>
-      
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}

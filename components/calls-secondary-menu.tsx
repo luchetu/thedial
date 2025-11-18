@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 
 const callsMenuItems = [
   {
+    title: "Dial",
+    href: "/dashboard/calls/dial",
+    icon: PhoneCall,
+  },
+  {
     title: "All Calls",
     href: "/dashboard/calls",
     icon: Phone,
@@ -20,11 +25,6 @@ const callsMenuItems = [
     title: "Recordings",
     href: "/dashboard/calls/recordings",
     icon: Mic,
-  },
-  {
-    title: "Dial",
-    href: "/dashboard/calls/dial",
-    icon: PhoneCall,
   },
   {
     title: "AI Assistant",

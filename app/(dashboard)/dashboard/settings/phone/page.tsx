@@ -10,8 +10,6 @@ import { PhoneNumberConfigDialog } from "@/components/phone-numbers/PhoneNumberC
 import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhoneNumbers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { SettingsSecondaryMenu } from "@/components/settings-secondary-menu";
-import { Separator } from "@/components/ui/separator";
 import type { UserPhoneNumber } from "@/features/phone-numbers/types";
 
 export default function PhoneSettingsPage() {
@@ -33,17 +31,6 @@ export default function PhoneSettingsPage() {
 
   return (
     <div className="flex h-screen">
-      {/* Secondary Menu */}
-      <div className="w-64 shrink-0 border-r bg-muted/10 flex flex-col">
-        <div className="px-6 pt-6 pb-2 shrink-0">
-          <h1 className="text-lg font-semibold mb-2">Settings</h1>
-        </div>
-        <Separator className="mb-2" />
-        <div className="flex-1 px-6 pb-6">
-          <SettingsSecondaryMenu />
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
@@ -54,10 +41,10 @@ export default function PhoneSettingsPage() {
           <Button
             variant="secondary"
             onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-2 text-white"
+            className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Buy Phone Number
+            Add Phone Number
           </Button>
         </header>
 
@@ -138,12 +125,13 @@ export default function PhoneSettingsPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Button
+                              variant="secondary"
                               size="sm"
                               onClick={() => {
                                 setSelectedPhoneNumber(phoneNumber);
                                 setConfigDialogOpen(true);
                               }}
-                              className="flex items-center gap-2 text-white"
+                              className="flex items-center gap-2"
                             >
                               <Settings className="h-4 w-4" />
                               Configure

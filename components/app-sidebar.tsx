@@ -1,17 +1,26 @@
 "use client";
 
-import { 
-  Home, 
-  Phone, 
-  Users, 
-  Settings, 
+import { useState } from "react";
+import {
+  Home,
+  Phone,
+  Users,
   LogOut,
-  User
+  User,
+  ChevronDown,
+  ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { AddPhoneNumberDialog } from "@/components/phone-numbers/AddPhoneNumberDialog";
 
 // Dynamically import admin menu item with SSR disabled to avoid hydration errors
 const AdminSettingsMenuItem = dynamic(
@@ -49,22 +58,86 @@ const mainItems = [
     icon: Users,
   },
   {
-    title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
+    title: "My Phone Numbers",
+    url: "/dashboard/settings/phone",
+    icon: Phone,
   },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const logoutMutation = useLogout();
+  const [isAddPhoneNumberDialogOpen, setIsAddPhoneNumberDialogOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<"call" | "buy" | null>(null);
+
+  const handleMakeCall = () => {
+    setSelectedAction("call");
+    setPopoverOpen(false);
+    router.push("/dashboard/calls/dial");
+  };
+
+  const handleBuyNumber = () => {
+    setSelectedAction("buy");
+    setPopoverOpen(false);
+    setIsAddPhoneNumberDialogOpen(true);
+  };
+
+  const getButtonLabel = () => {
+    if (selectedAction === "call") return "Make a Call";
+    if (selectedAction === "buy") return "Buy Number";
+    return "Quick Actions";
+  };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center">
-          <Logo size={48} className="text-primary" />
-          <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden ml-0 leading-none" style={{ transform: 'translateY(-6px)' }}>thedial</span>
+    <>
+      <Sidebar collapsible="icon">
+      <SidebarHeader className="min-w-0">
+        <div className="flex items-center min-w-0">
+          <Logo size={35} className="text-primary shrink-0" />
+          <span className="text-l md:text-xl font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden leading-none truncate ml-2">thedial</span>
+        </div>
+        <div className="w-full min-w-0">
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3 w-full min-w-0 justify-center gap-2 text-sm font-semibold group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center"
+              >
+                {selectedAction === "buy" ? (
+                  <ShoppingCart className="h-4 w-4 shrink-0" />
+                ) : (
+                  <Phone className="h-4 w-4 shrink-0" />
+                )}
+                <span className="group-data-[collapsible=icon]:hidden truncate min-w-0">{getButtonLabel()}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 group-data-[collapsible=icon]:hidden" />
+              </Button>
+            </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="bottom"
+            className="w-52 p-1"
+          >
+            <button
+              type="button"
+              onClick={handleMakeCall}
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <Phone className="h-4 w-4" />
+              <span>Make a Call</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBuyNumber}
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>Buy Number</span>
+            </button>
+          </PopoverContent>
+        </Popover>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -76,10 +149,8 @@ export function AppSidebar() {
                 
                 if (item.url === "/dashboard") {
                   isActive = pathname === item.url;
-                } else if (item.url === "/dashboard/settings") {
-                  isActive = pathname === item.url || 
-                    (pathname.startsWith("/dashboard/settings/") && 
-                     !pathname.startsWith("/dashboard/settings/admin"));
+                } else if (item.url === "/dashboard/settings/phone") {
+                  isActive = pathname === item.url;
                 } else {
                   isActive = pathname === item.url || 
                     (item.url !== "/dashboard" && pathname.startsWith(item.url));
@@ -96,7 +167,6 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
-              {/* Admin Settings - dynamically imported with SSR disabled */}
               <AdminSettingsMenuItem />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -105,9 +175,11 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
-              <User />
-              <span>Account</span>
+            <SidebarMenuButton asChild>
+              <Link href="/dashboard/settings/account">
+                <User />
+                <span>Account</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
@@ -123,5 +195,11 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+
+    <AddPhoneNumberDialog
+      open={isAddPhoneNumberDialogOpen}
+      onOpenChange={setIsAddPhoneNumberDialogOpen}
+    />
+    </>
   );
 }

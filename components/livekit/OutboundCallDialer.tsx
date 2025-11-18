@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhoneNumbers";
-import { createOutboundCall } from "@/features/livekit/api";
-import { getContact } from "@/features/contacts/api";
+import { useCreateOutboundCall } from "@/features/livekit/hooks/useCreateOutboundCall";
+import { useContact } from "@/features/contacts/hooks/useContact";
+import { formatPhoneNumber, normalizeToE164, isValidE164 } from "@/lib/utils/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,19 +17,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Phone } from "lucide-react";
-import type { ApiError } from "@/lib/http/client";
 
 interface OutboundCallDialerProps {
-  onCallStart: (call: { roomName: string; identity: string }) => void;
+  onCallStart: (call: { roomName: string; identity: string; callerNumber?: string; callerName?: string }) => void;
   contactId?: string;
+  activeCall?: { roomName: string; identity: string; callerNumber?: string; callerName?: string } | null;
 }
 
-export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDialerProps) {
+export function OutboundCallDialer({ onCallStart, contactId, activeCall }: OutboundCallDialerProps) {
   const [destinationNumber, setDestinationNumber] = useState("");
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>("");
-  const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingContact, setIsLoadingContact] = useState(false);
+
   const { data: user } = useCurrentUser();
   const { 
     data: userPhoneNumbers, 
@@ -36,66 +36,43 @@ export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDiale
     error: phoneNumbersError 
   } = useUserPhoneNumbers();
   
+  const { data: contact } = useContact(contactId || "");
+  
+  const createCallMutation = useCreateOutboundCall();
+  
+  const isConnecting = createCallMutation.isPending || Boolean(activeCall);
+  
   
   // Filter to only active phone numbers
   const activePhoneNumbers = (userPhoneNumbers || []).filter(
     (pn) => pn.status === "active"
   );
 
-  const formatPhoneNumber = (value: string) => {
-    // Allow digits, spaces, dashes, parentheses, and +
-    const cleaned = value.replace(/[^\d+\-()\s]/g, "");
-    return cleaned;
-  };
-
-  const normalizeToE164 = (phone: string): string => {
-    // Remove all non-digit characters except +
-    let cleaned = phone.replace(/[^\d+]/g, "");
-    
-    // If it doesn't start with +, try to format it
-    if (!cleaned.startsWith("+")) {
-      // Remove leading zeros
-      cleaned = cleaned.replace(/^0+/, "");
-      
-      // If it's 10 digits, assume US number (+1)
-      if (cleaned.length === 10) {
-        cleaned = `+1${cleaned}`;
-      } else if (cleaned.length > 0) {
-        // Add + if missing
-        cleaned = `+${cleaned}`;
-      }
-    }
-    
-    return cleaned;
-  };
-
-  // Auto-select first phone number if available and none selected
   useEffect(() => {
     if (activePhoneNumbers.length > 0 && !selectedPhoneNumberId && !isLoadingPhoneNumbers) {
-      setSelectedPhoneNumberId(activePhoneNumbers[0].id);
+      // Use setTimeout to make setState asynchronous and avoid cascading renders
+      setTimeout(() => {
+        setSelectedPhoneNumberId(activePhoneNumbers[0].id);
+      }, 0);
     }
   }, [activePhoneNumbers, selectedPhoneNumberId, isLoadingPhoneNumbers]);
 
-  // Load contact and pre-populate phone number if contactId is provided
+  // Pre-populate phone number and name from contact data
   useEffect(() => {
-    if (contactId) {
-      setIsLoadingContact(true);
-      getContact(contactId)
-        .then((contact) => {
-          if (contact.phone_number) {
-            // Format the phone number for display
-            const formatted = formatPhoneNumber(contact.phone_number);
-            setDestinationNumber(formatted);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load contact:", err);
-        })
-        .finally(() => {
-          setIsLoadingContact(false);
-        });
+    if (contact?.phone_number) {
+      // Format the phone number for display
+      const formatted = formatPhoneNumber(contact.phone_number);
+      // Only update if the value actually changed to avoid unnecessary re-renders
+      setDestinationNumber((prev) => prev !== formatted ? formatted : prev);
+    } else if (!contactId && destinationNumber) {
+      // Clear destination number if no contactId and contact data is cleared
+      setDestinationNumber("");
     }
-  }, [contactId]); // Only depend on contactId, not destinationNumber
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact?.phone_number, contactId]);
+
+  // Get contact name for display
+  const contactName = contact?.name;
 
   const handleDial = async () => {
     if (!destinationNumber.trim() || !user || !selectedPhoneNumberId) return;
@@ -110,34 +87,47 @@ export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDiale
     // Normalize phone number to E.164 format
     const normalizedPhone = normalizeToE164(destinationNumber.trim());
     
-    // Validate E.164 format (basic check: + followed by 1-15 digits)
-    const e164Pattern = /^\+[1-9]\d{1,14}$/;
-    if (!e164Pattern.test(normalizedPhone)) {
+    // Validate E.164 format
+    if (!isValidE164(normalizedPhone)) {
       setError("Please enter a valid phone number in international format (e.g., +14155551234)");
       return;
     }
     
-    setIsConnecting(true);
     setError(null);
     
-    try {
-      // Call the backend API to create outbound call with AI agent
-      const result = await createOutboundCall({
+    console.log("🟠 OutboundCallDialer: Starting call to:", normalizedPhone);
+    
+    // Use React Query mutation to create the call
+    createCallMutation.mutate(
+      {
         phoneNumber: normalizedPhone,
         phoneNumberId: selectedPhoneNumberId, // Backend will look up SIP trunk from this
         agentName: "telephony-agent",
         userIdentity: `user-${user.id}`,
-      });
-      
-      // Join the browser user to the room
-      onCallStart({ roomName: result.room, identity: `user-${user.id}` });
-    } catch (err) {
-      const apiError = err as ApiError | Error;
-      const message = (apiError as ApiError)?.message || apiError.message || "Failed to initiate call";
-      setError(message);
-    } finally {
-      setIsConnecting(false);
-    }
+      },
+      {
+        onSuccess: (result) => {
+          console.log("🟠 OutboundCallDialer: API call successful! Result:", result);
+          
+          // Join the browser user to the room
+          const callData = { 
+            roomName: result.room, 
+            identity: `user-${user.id}`,
+            callerNumber: normalizedPhone,
+            callerName: contactName || normalizedPhone,
+          };
+          
+          console.log("🟠 OutboundCallDialer: Calling onCallStart with:", callData);
+          onCallStart(callData);
+          console.log("🟠 OutboundCallDialer: onCallStart completed");
+        },
+        onError: (err) => {
+          console.error("🟠 OutboundCallDialer: ERROR:", err);
+          const message = err?.message || "Failed to initiate call";
+          setError(message);
+        },
+      }
+    );
   };
 
   return (
@@ -185,7 +175,7 @@ export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDiale
 
       {phoneNumbersError && (
         <div className="text-sm text-destructive" role="alert">
-          <p>Failed to load phone numbers: {((phoneNumbersError as unknown) as ApiError)?.message || phoneNumbersError.message || "Unknown error"}</p>
+          <p>Failed to load phone numbers: {phoneNumbersError instanceof Error ? phoneNumbersError.message : "Unknown error"}</p>
         </div>
       )}
 
@@ -225,17 +215,26 @@ export function OutboundCallDialer({ onCallStart, contactId }: OutboundCallDiale
             onClick={handleDial}
             disabled={!destinationNumber.trim() || !selectedPhoneNumberId || isConnecting}
             size="lg"
-            className="px-8"
+            className="px-8 bg-green-600 hover:bg-green-700 text-white"
           >
-            <Phone className="h-5 w-5 mr-2" />
-            {isConnecting ? "Connecting..." : "Call"}
+            {isConnecting ? (
+              <>
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Phone className="h-5 w-5 mr-2" />
+                Call
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      {error && (
+      {(error || createCallMutation.error) && (
         <div className="text-sm text-destructive" role="alert">
-          {error}
+          {error || createCallMutation.error?.message || "Failed to initiate call"}
         </div>
       )}
 

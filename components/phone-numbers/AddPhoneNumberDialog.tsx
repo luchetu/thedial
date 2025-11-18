@@ -13,9 +13,10 @@ import { Button } from "@/components/ui/button";
 import { PhoneNumberOptionCard } from "./PhoneNumberOptionCard";
 import { BuyPhoneNumberForm } from "./forms/BuyPhoneNumberForm";
 import { PortPhoneNumberForm } from "./forms/PortPhoneNumberForm";
-import { ShoppingCart, ArrowRight } from "lucide-react";
+import { VerifyPhoneNumberForm } from "./forms/VerifyPhoneNumberForm";
+import { ShoppingCart, ArrowRight, Smartphone } from "lucide-react";
 
-export type PhoneNumberOption = "buy" | "port";
+export type PhoneNumberOption = "buy" | "port" | "verify";
 
 interface AddPhoneNumberDialogProps {
   open: boolean;
@@ -28,6 +29,13 @@ const PHONE_NUMBER_OPTIONS = [
     title: "Buy Phone Number",
     description: "Purchase a new phone number",
     icon: ShoppingCart,
+    badge: undefined,
+  },
+  {
+    id: "verify" as const,
+    title: "Add Existing Number",
+    description: "Add your existing number (verification required)",
+    icon: Smartphone,
     badge: undefined,
   },
   {
@@ -63,6 +71,8 @@ export function AddPhoneNumberDialog({
     switch (option) {
       case "buy":
         return "Buy Number";
+      case "verify":
+        return "Add Number";
       case "port":
         return "Start Port";
       default:
@@ -109,7 +119,8 @@ export function AddPhoneNumberDialog({
 
           {/* Right: Form */}
           <div className="border-l border-muted pl-6 pr-2">
-            {selectedOption === "buy" && <BuyPhoneNumberForm />}
+            {selectedOption === "buy" && <BuyPhoneNumberForm onSuccess={() => onOpenChange(false)} />}
+            {selectedOption === "verify" && <VerifyPhoneNumberForm />}
             {selectedOption === "port" && <PortPhoneNumberForm />}
           </div>
         </div>

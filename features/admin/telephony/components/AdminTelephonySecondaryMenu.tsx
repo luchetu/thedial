@@ -2,29 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PhoneOutgoing, PhoneIncoming, Route, Settings } from "lucide-react";
+import { Layers, Phone, Route, Settings, GitBranch, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminTelephonyMenuItems = [
   {
-    title: "Outbound Trunks",
-    href: "/dashboard/settings/admin/telephony/outbound",
-    icon: PhoneOutgoing,
+    title: "Twilio Configuration",
+    href: "/dashboard/settings/admin/telephony/twilio",
+    icon: Settings,
+    description: "Configure Twilio API credentials",
   },
   {
-    title: "Inbound Trunks",
-    href: "/dashboard/settings/admin/telephony/inbound",
-    icon: PhoneIncoming,
+    title: "Trunks",
+    href: "/dashboard/settings/admin/telephony/trunks",
+    icon: Phone,
+    description: "Manage all trunks (outbound, inbound, bidirectional)",
+  },
+  {
+    title: "Routing Profiles",
+    href: "/dashboard/settings/admin/telephony/routing-profiles",
+    icon: GitBranch,
+    description: "Configure call routing profiles",
+  },
+  {
+    title: "Plan Mappings",
+    href: "/dashboard/settings/admin/telephony/plan-routing-profiles",
+    icon: Link2,
+    description: "Map plans to routing profiles",
   },
   {
     title: "Dispatch Rules",
     href: "/dashboard/settings/admin/telephony/dispatch-rules",
     icon: Route,
+    description: "Configure call dispatch rules",
   },
   {
-    title: "Twilio Configuration",
-    href: "/dashboard/settings/admin/telephony/twilio",
-    icon: Settings,
+    title: "Plans",
+    href: "/dashboard/settings/admin/telephony/plans",
+    icon: Layers,
+    description: "Manage subscription plans",
   },
 ];
 
@@ -35,7 +51,11 @@ export function AdminTelephonySecondaryMenu() {
     <nav className="space-y-1">
       {adminTelephonyMenuItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        // Handle active state: exact match or legacy routes for trunks
+        const isActive = pathname === item.href || 
+          (item.href === "/dashboard/settings/admin/telephony/trunks" && 
+           (pathname === "/dashboard/settings/admin/telephony/outbound" || 
+            pathname === "/dashboard/settings/admin/telephony/inbound"));
         
         return (
           <Link

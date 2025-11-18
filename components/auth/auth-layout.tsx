@@ -13,8 +13,8 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
       {/* Logo - Top Left */}
       <div className="absolute top-6 left-6 z-20">
         <div className="flex items-center">
-          <Logo size={48} className="text-primary" />
-          <span className="text-xl font-bold tracking-tight text-foreground ml-0 leading-none" style={{ transform: 'translateY(-6px)' }}>TheDial</span>
+          <Logo size={40} className="text-primary" />
+          <span className="text-xl font-bold tracking-tight text-foreground ml-2 leading-none">thedial</span>
         </div>
       </div>
 

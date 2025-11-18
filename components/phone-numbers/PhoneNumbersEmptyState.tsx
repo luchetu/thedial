@@ -34,7 +34,7 @@ export function PhoneNumbersEmptyState({
       {/* Action Button */}
       <Button variant="secondary" className="gap-2 text-white" onClick={onAddPhoneNumber} size="lg">
         <Plus className="h-4 w-4" />
-        Buy Phone Number
+        Add Phone Number
       </Button>
     </div>
   );
