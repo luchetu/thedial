@@ -21,7 +21,7 @@ export const ForgotPasswordForm = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Reset your password</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -64,7 +64,7 @@ export const ForgotPasswordForm = () => {
               href="/auth/signup"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Don't have an account? Sign up
+              Don&apos;t have an account? Sign up
             </Link>
           </div>
         </CardContent>

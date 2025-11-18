@@ -3,8 +3,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Phone, PhoneIncoming, PhoneOutgoing, Brain, BarChart3, Plus, CheckCircle } from "lucide-react";
+import { Phone, PhoneIncoming, PhoneOutgoing, Brain, BarChart3, Plus, CheckCircle, Sparkles } from "lucide-react";
 import { CallActivityChart } from "@/components/dashboard/Charts/CallActivityChart";
+import Link from "next/link";
 
 export default function DashboardPage() {
   return (
@@ -14,6 +15,18 @@ export default function DashboardPage() {
         <SidebarTrigger className="-ml-1" />
         <div className="flex-1" />
       </header>
+      
+      {/* Floating AI Assistant Button */}
+      <Link href="/dashboard/calls/ai-assistant">
+        <Button
+          variant="secondary"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 text-white"
+          size="lg"
+        >
+          <Sparkles className="h-6 w-6" />
+          <span className="sr-only">AI Assistant</span>
+        </Button>
+      </Link>
       
       {/* Content */}
       <div className="flex flex-1 flex-col">
@@ -115,7 +128,7 @@ export default function DashboardPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Button className="w-full bg-secondary hover:bg-secondary/80" size="sm">
+                  <Button variant="secondary" className="w-full text-white" size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Buy Additional Number
                   </Button>

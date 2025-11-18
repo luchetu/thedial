@@ -5,10 +5,10 @@ export const useForm = <T extends Record<string, unknown>>({
   onSubmit,
   defaultValues,
 }: Omit<FormProps<T>, 'className' | 'children'>) => {
-  return useTanStackForm<T>({
-    defaultValues: defaultValues as T,
+  return useTanStackForm({
+    defaultValues: (defaultValues ?? {}) as T,
     onSubmit: async ({ value }) => {
-      await onSubmit(value);
+      await onSubmit(value as T);
     },
   });
 };

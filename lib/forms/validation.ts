@@ -51,4 +51,5 @@ export const createValidationRules = <T extends FieldValue>(rules: ValidationRul
 
 export const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const phonePattern = /^\+?[\d\s\-\(\)]+$/;
-export const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+// Minimum requirement: at least 8 characters (no complexity constraints)
+export const passwordPattern = /^.{6,}$/;
