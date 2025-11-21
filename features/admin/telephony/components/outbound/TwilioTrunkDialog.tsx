@@ -41,6 +41,7 @@ export const TwilioTrunkDialog = ({
         const updatePayload: UpdateTwilioTrunkRequest = {
           friendlyName: values.friendlyName,
           terminationSipDomain: values.terminationSipDomain,
+          originationSipUri: values.originationSipUri,
           credentialMode: values.credentialMode,
           credentialListSid: values.credentialListSid,
           credentialListName: values.credentialListName,
@@ -57,6 +58,7 @@ export const TwilioTrunkDialog = ({
         const createPayload: CreateTwilioTrunkRequest = {
           friendlyName: values.friendlyName,
           terminationSipDomain: values.terminationSipDomain,
+          originationSipUri: values.originationSipUri,
           credentialMode: values.credentialMode,
           credentialListSid: values.credentialListSid,
           credentialListName: values.credentialListName,
@@ -103,6 +105,7 @@ export const TwilioTrunkDialog = ({
                 ? {
                     friendlyName: trunk.friendlyName,
                     terminationSipDomain: trunk.terminationSipDomain || trunk.domainName,
+                    originationSipUri: trunk.originationSipUri,
                     credentialListMode: (trunk.credentialListSid ? "existing" : "create") as TwilioCredentialListMode,
                     credentialListSid: trunk.credentialListSid,
                     credentialListName: trunk.credentialListName,

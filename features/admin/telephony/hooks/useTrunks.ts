@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import {
   getTrunks,
   getTrunk,
@@ -20,7 +20,7 @@ import type {
 } from "../types";
 import type { ApiError } from "@/lib/http/client";
 
-const trunksKeys = {
+export const trunksKeys = {
   all: ["admin", "telephony", "trunks"] as const,
   lists: () => [...trunksKeys.all, "list"] as const,
   list: (filters?: ListTrunksFilters) => [...trunksKeys.lists(), filters] as const,
@@ -91,6 +91,16 @@ export function useRoutingProfilesByTrunk(trunkId: string, options?: { enabled?:
     queryKey: trunksKeys.routingProfiles(trunkId),
     queryFn: () => getRoutingProfilesByTrunk(trunkId),
     enabled: options?.enabled !== false && !!trunkId,
+  });
+}
+
+export function useRoutingProfilesForAllTrunks(trunks: Trunk[]) {
+  return useQueries({
+    queries: trunks.map((trunk) => ({
+      queryKey: trunksKeys.routingProfiles(trunk.id),
+      queryFn: () => getRoutingProfilesByTrunk(trunk.id),
+      enabled: !!trunk.id,
+    })),
   });
 }
 

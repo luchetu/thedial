@@ -180,7 +180,7 @@ export const TwilioConfigForm = ({
               <FormField
                 field={field}
                 name="sipTrunkAddress"
-                label="SIP Trunk Address"
+                label="Termination SIP URI"
                 placeholder="abc123.pstn.twilio.com"
               />
             )}

@@ -9,7 +9,7 @@ export function ProtectedDashboard({ children }: { children: React.ReactNode }) 
     <AuthGuard>
       <SidebarProvider>
         <AppSidebar />
-        <main className="flex-1">
+        <main className="flex-1 bg-sidebar">
           {children}
         </main>
       </SidebarProvider>

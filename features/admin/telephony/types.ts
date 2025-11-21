@@ -130,6 +130,7 @@ export type Trunk = {
   type: "twilio" | "livekit_outbound" | "livekit_inbound" | "custom";
   direction: "outbound" | "inbound" | "bidirectional";
   status: "active" | "inactive" | "pending";
+  externalId?: string; // Provider-specific external ID (e.g., Twilio trunk SID)
   metadata?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
@@ -220,6 +221,7 @@ export type ConfigureTrunkRequest = {
 
   // Twilio fields
   terminationSipDomain?: string; // SIP domain
+  originationSipUri?: string; // LiveKit SIP URI for inbound calls
   credentialMode?: "existing" | "create"; // Credential list mode
   credentialListSid?: string; // Existing credential list SID
   credentialListName?: string; // New credential list name
@@ -241,6 +243,7 @@ export type TwilioTrunk = {
   friendlyName: string;
   domainName: string; // Termination SIP URI (e.g., "abc123.pstn.twilio.com")
   terminationSipDomain?: string; // Raw domain without pstn.twilio.com suffix (if needed for programmatic creation)
+  originationSipUri?: string; // LiveKit SIP URI for inbound calls
   credentialListName?: string; // Name of associated credential list
   credentialListSid?: string; // SID of credential list
   credentialsCount?: number; // Number of credentials in the list
@@ -253,9 +256,65 @@ export type TwilioTrunk = {
 
 export type TwilioCredentialListMode = "existing" | "create";
 
+export type TwilioCredentialList = {
+  sid: string;
+  friendlyName: string;
+};
+
+export type TwilioCredential = {
+  sid: string;
+  username: string;
+};
+
+export type CreateTwilioCredentialListRequest = {
+  friendlyName: string;
+};
+
+export type UpdateTwilioCredentialListRequest = {
+  friendlyName?: string;
+};
+
+export type CreateTwilioCredentialRequest = {
+  username: string;
+  password: string;
+};
+
+export type UpdateTwilioCredentialRequest = {
+  username?: string;
+  password?: string;
+};
+
+// Twilio Origination URL Types
+export type TwilioOriginationURL = {
+  sid: string;
+  friendlyName: string;
+  sipUrl: string;
+  priority: number;
+  weight: number;
+  enabled: boolean;
+  trunkSid: string;
+};
+
+export type CreateTwilioOriginationURLRequest = {
+  friendlyName: string;
+  sipUrl: string;
+  priority?: number;
+  weight?: number;
+  enabled?: boolean;
+};
+
+export type UpdateTwilioOriginationURLRequest = {
+  friendlyName?: string;
+  sipUrl?: string;
+  priority?: number;
+  weight?: number;
+  enabled?: boolean;
+};
+
 export type CreateTwilioTrunkRequest = {
   friendlyName: string;
   terminationSipDomain: string;
+  originationSipUri?: string; // LiveKit SIP URI for inbound calls
   credentialMode: TwilioCredentialListMode;
   credentialListSid?: string;
   credentialListName?: string;
@@ -266,6 +325,7 @@ export type CreateTwilioTrunkRequest = {
 export type UpdateTwilioTrunkRequest = {
   friendlyName?: string;
   terminationSipDomain?: string;
+  originationSipUri?: string; // LiveKit SIP URI for inbound calls
   credentialMode?: TwilioCredentialListMode;
   credentialListSid?: string;
   credentialListName?: string;
@@ -280,8 +340,8 @@ export type OutboundTrunk = {
   id: string;
   name: string;
   trunkId: string;
-  numbers: string[]; 
-  twilioTrunkId: string; 
+  numbers: string[];
+  twilioTrunkId: string;
   twilioTrunkName?: string; // Friendly name of Twilio trunk (for display)
   twilioSipAddress: string; // Twilio trunk's Termination SIP URI (e.g., "abc123.pstn.twilio.com")
   twilioSipUsername: string; // Username from Twilio credential list
@@ -440,6 +500,7 @@ export type TwilioConfig = {
   sipTrunkAddress?: string; // Default Twilio trunk Termination SIP URI (e.g., "abc123.pstn.twilio.com")
   sipTrunkUsername?: string; // Default username from Twilio credential list
   sipTrunkPassword?: string; // Default password from Twilio credential list (masked in responses)
+  // Note: Origination SIP URI is configured directly in Twilio trunk settings, not stored here
   // Webhook URLs for inbound calls/SMS
   inboundVoiceWebhookUrl?: string; // Twilio calls this when receiving inbound calls
   inboundSmsWebhookUrl?: string; // Twilio calls this when receiving SMS

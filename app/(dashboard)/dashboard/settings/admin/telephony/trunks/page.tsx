@@ -19,13 +19,21 @@ import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { getTrunkColumns } from "@/features/admin/telephony/components/trunks/columns";
-import { TrunkDialog } from "@/features/admin/telephony/components/trunks/TrunkDialog";
+import { TwilioTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/TwilioTrunkDialog";
+import { LiveKitOutboundTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitOutboundTrunkDialog";
+import { LiveKitInboundTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitInboundTrunkDialog";
+import { CustomTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/CustomTrunkDialog";
+import { TwilioConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/TwilioConfigurationDialog";
+import { LiveKitOutboundConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitOutboundConfigurationDialog";
+import { LiveKitInboundConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitInboundConfigurationDialog";
+import { CustomConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/CustomConfigurationDialog";
 import {
   useTrunks,
   useDeleteTrunk,
   useRoutingProfilesByTrunk,
+  useRoutingProfilesForAllTrunks,
 } from "@/features/admin/telephony/hooks/useTrunks";
-import type { Trunk, ListTrunksFilters } from "@/features/admin/telephony/types";
+import type { Trunk } from "@/features/admin/telephony/types";
 import {
   Dialog,
   DialogContent,
@@ -34,11 +42,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { ColumnFiltersState, ColumnDef } from "@tanstack/react-table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function TrunksPage() {
-  const [directionFilter, setDirectionFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [trunkToDelete, setTrunkToDelete] = useState<Trunk | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -47,32 +56,33 @@ export default function TrunksPage() {
   const [configuringTrunk, setConfiguringTrunk] = useState<Trunk | null>(null);
   const [initialTrunkType, setInitialTrunkType] = useState<Trunk["type"] | null>(null);
 
-  const filters = useMemo<ListTrunksFilters>(
-    () => ({
-      direction: directionFilter !== "all" ? (directionFilter as "outbound" | "inbound" | "bidirectional") : undefined,
-      type: typeFilter !== "all" ? (typeFilter as Trunk["type"]) : undefined,
-      status: statusFilter !== "all" ? (statusFilter as Trunk["status"]) : undefined,
-    }),
-    [directionFilter, typeFilter, statusFilter]
-  );
-
   const {
     data: trunksData,
     isLoading,
     error,
-  } = useTrunks(filters);
+  } = useTrunks();
   const trunks = useMemo(() => trunksData ?? [], [trunksData]);
 
   const deleteTrunkMutation = useDeleteTrunk();
 
   // Fetch routing profiles for each trunk to show usage
+  const routingProfileQueries = useRoutingProfilesForAllTrunks(trunks);
+
   const routingProfileCounts = useMemo(() => {
     const counts: Record<string, { outbound: number; inbound: number }> = {};
-    trunks.forEach((trunk) => {
+    trunks.forEach((trunk, index) => {
+      const query = routingProfileQueries[index];
+      if (query?.data) {
+        counts[trunk.id] = {
+          outbound: query.data.outbound.length,
+          inbound: query.data.inbound.length,
+        };
+      } else {
       counts[trunk.id] = { outbound: 0, inbound: 0 };
+      }
     });
     return counts;
-  }, [trunks]);
+  }, [trunks, routingProfileQueries]);
 
   // Fetch routing profiles for the trunk being deleted
   const { data: routingProfilesData } = useRoutingProfilesByTrunk(
@@ -165,22 +175,13 @@ export default function TrunksPage() {
     );
   }
 
-  if (isLoading && trunks.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-        <WaveLoader className="text-primary" />
-        <span>Loading trunks...</span>
-      </div>
-    );
-  }
-
-  const canDelete = trunkToDelete && routingProfilesForDelete && 
+  const canDelete = trunkToDelete && routingProfilesForDelete &&
     routingProfilesForDelete.outbound === 0 && routingProfilesForDelete.inbound === 0;
 
   return (
     <div className="flex h-screen">
       {/* Secondary Menu */}
-      <div className="w-64 shrink-0 border-r bg-muted/10 flex flex-col">
+      <div className="w-64 shrink-0 border-r bg-white flex flex-col">
         <div className="px-6 pt-6 pb-2 shrink-0">
           <h1 className="text-lg font-semibold mb-2">Telephony Settings</h1>
         </div>
@@ -234,15 +235,49 @@ export default function TrunksPage() {
             />
 
             {/* Filters */}
-            <div className="flex gap-4 items-end">
+            <div className="flex gap-4 items-end flex-wrap">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Direction</label>
-                <Select value={directionFilter} onValueChange={setDirectionFilter}>
-                  <SelectTrigger className="w-[180px]">
+                <Label htmlFor="name-filter" className="text-sm font-medium">
+                  Name
+                </Label>
+                <Input
+                  id="name-filter"
+                  placeholder="Filter by name..."
+                  value={(columnFilters.find((f) => f.id === "name")?.value as string) ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setColumnFilters((prev) => {
+                      const newFilters = prev.filter((f) => f.id !== "name");
+                      if (value) {
+                        newFilters.push({ id: "name", value });
+                      }
+                      return newFilters;
+                    });
+                  }}
+                  className="w-[200px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="direction-filter" className="text-sm font-medium">
+                  Direction
+                </Label>
+                <Select
+                  value={(columnFilters.find((f) => f.id === "direction")?.value as string) || undefined}
+                  onValueChange={(value) => {
+                    setColumnFilters((prev) => {
+                      const newFilters = prev.filter((f) => f.id !== "direction");
+                      if (value) {
+                        newFilters.push({ id: "direction", value });
+                      }
+                      return newFilters;
+                    });
+                  }}
+                >
+                  <SelectTrigger id="direction-filter" className="w-[180px]">
                     <SelectValue placeholder="All directions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All directions</SelectItem>
                     <SelectItem value="outbound">Outbound</SelectItem>
                     <SelectItem value="inbound">Inbound</SelectItem>
                     <SelectItem value="bidirectional">Bidirectional</SelectItem>
@@ -251,13 +286,25 @@ export default function TrunksPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Type</label>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[180px]">
+                <Label htmlFor="type-filter" className="text-sm font-medium">
+                  Type
+                </Label>
+                <Select
+                  value={(columnFilters.find((f) => f.id === "type")?.value as string) || undefined}
+                  onValueChange={(value) => {
+                    setColumnFilters((prev) => {
+                      const newFilters = prev.filter((f) => f.id !== "type");
+                      if (value) {
+                        newFilters.push({ id: "type", value });
+                      }
+                      return newFilters;
+                    });
+                  }}
+                >
+                  <SelectTrigger id="type-filter" className="w-[180px]">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All types</SelectItem>
                     <SelectItem value="twilio">Twilio</SelectItem>
                     <SelectItem value="livekit_outbound">LiveKit Outbound</SelectItem>
                     <SelectItem value="livekit_inbound">LiveKit Inbound</SelectItem>
@@ -267,27 +314,61 @@ export default function TrunksPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
+                <Label htmlFor="status-filter" className="text-sm font-medium">
+                  Status
+                </Label>
+                <Select
+                  value={(columnFilters.find((f) => f.id === "status")?.value as string) || undefined}
+                  onValueChange={(value) => {
+                    setColumnFilters((prev) => {
+                      const newFilters = prev.filter((f) => f.id !== "status");
+                      if (value) {
+                        newFilters.push({ id: "status", value });
+                      }
+                      return newFilters;
+                    });
+                  }}
+                >
+                  <SelectTrigger id="status-filter" className="w-[180px]">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {columnFilters.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium opacity-0">Clear</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setColumnFilters([])}
+                    className="w-[180px]"
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              )}
             </div>
 
-            <DataTable
+            {isLoading && trunks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+                <WaveLoader className="text-primary" />
+                <span>Loading trunks...</span>
+              </div>
+            ) : (
+              <DataTable<Trunk>
               data={trunks}
-              // @ts-expect-error - TanStack Table column type inference limitation
-              columns={columns}
-              emptyMessage={isLoading ? "Loading trunks..." : "No trunks found."}
+                columns={columns as ColumnDef<Trunk>[]}
+                emptyMessage="No trunks found."
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
             />
+            )}
           </div>
         </div>
       </div>
@@ -340,7 +421,59 @@ export default function TrunksPage() {
         </DialogContent>
       </Dialog>
 
-      <TrunkDialog
+      {/* Create/Edit Dialogs - Show appropriate dialog based on trunk type */}
+      {isCreateDialogOpen && (
+        <>
+          {(editingTrunk?.type === "twilio" || initialTrunkType === "twilio") && (
+            <TwilioTrunkDialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) {
+                  setEditingTrunk(null);
+                  setInitialTrunkType(null);
+                }
+              }}
+              trunk={editingTrunk || undefined}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {(editingTrunk?.type === "livekit_outbound" || initialTrunkType === "livekit_outbound") && (
+            <LiveKitOutboundTrunkDialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) {
+                  setEditingTrunk(null);
+                  setInitialTrunkType(null);
+                }
+              }}
+              trunk={editingTrunk || undefined}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {(editingTrunk?.type === "livekit_inbound" || initialTrunkType === "livekit_inbound") && (
+            <LiveKitInboundTrunkDialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) {
+                  setEditingTrunk(null);
+                  setInitialTrunkType(null);
+                }
+              }}
+              trunk={editingTrunk || undefined}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {(editingTrunk?.type === "custom" || initialTrunkType === "custom") && (
+            <CustomTrunkDialog
         open={isCreateDialogOpen}
         onOpenChange={(open) => {
           setIsCreateDialogOpen(open);
@@ -349,28 +482,80 @@ export default function TrunksPage() {
             setInitialTrunkType(null);
           }
         }}
-        trunk={editingTrunk}
-        initialType={initialTrunkType}
+              trunk={editingTrunk || undefined}
         onSuccess={() => {
           // Query will automatically refetch
         }}
       />
+          )}
+        </>
+      )}
 
-      {/* Configure Dialog */}
-      <TrunkDialog
-        open={isConfigureDialogOpen}
-        onOpenChange={(open) => {
-          setIsConfigureDialogOpen(open);
-          if (!open) {
-            setConfiguringTrunk(null);
-          }
-        }}
-        trunk={configuringTrunk}
-        configurationOnly={true}
-        onSuccess={() => {
-          // Query will automatically refetch
-        }}
-      />
+      {/* Configure Dialogs - Show appropriate dialog based on trunk type */}
+      {configuringTrunk && (
+        <>
+          {configuringTrunk.type === "twilio" && (
+            <TwilioConfigurationDialog
+              open={isConfigureDialogOpen}
+              onOpenChange={(open) => {
+                setIsConfigureDialogOpen(open);
+                if (!open) {
+                  setConfiguringTrunk(null);
+                }
+              }}
+              trunk={configuringTrunk}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {configuringTrunk.type === "livekit_outbound" && (
+            <LiveKitOutboundConfigurationDialog
+              open={isConfigureDialogOpen}
+              onOpenChange={(open) => {
+                setIsConfigureDialogOpen(open);
+                if (!open) {
+                  setConfiguringTrunk(null);
+                }
+              }}
+              trunk={configuringTrunk}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {configuringTrunk.type === "livekit_inbound" && (
+            <LiveKitInboundConfigurationDialog
+              open={isConfigureDialogOpen}
+              onOpenChange={(open) => {
+                setIsConfigureDialogOpen(open);
+                if (!open) {
+                  setConfiguringTrunk(null);
+                }
+              }}
+              trunk={configuringTrunk}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+          {configuringTrunk.type === "custom" && (
+            <CustomConfigurationDialog
+              open={isConfigureDialogOpen}
+              onOpenChange={(open) => {
+                setIsConfigureDialogOpen(open);
+                if (!open) {
+                  setConfiguringTrunk(null);
+                }
+              }}
+              trunk={configuringTrunk}
+              onSuccess={() => {
+                // Query will automatically refetch
+              }}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

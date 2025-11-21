@@ -1,34 +1,46 @@
 "use client";
 
-import * as React from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   useReactTable,
   type ColumnDef,
+  type ColumnFiltersState,
+  type OnChangeFn,
 } from "@tanstack/react-table";
 import { Card, CardContent } from "@/components/ui/card";
 
-interface DataTableProps<TData> {
+
+interface DataTableProps<TData, TValue = unknown> {
   data: TData[];
-  columns: ColumnDef<TData, unknown>[];
+  columns: ColumnDef<TData, TValue>[];
   emptyMessage?: string;
+  columnFilters?: ColumnFiltersState;
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData, TValue = unknown>({
   data,
   columns,
   emptyMessage = "No results.",
-}: DataTableProps<TData>) {
+  columnFilters,
+  onColumnFiltersChange,
+}: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      columnFilters,
+    },
+    onColumnFiltersChange,
   });
 
   return (
-    <Card>
+    <Card className="bg-white">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -46,18 +58,18 @@ export function DataTable<TData>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </th>
                   ))}
                 </tr>
               ))}
             </thead>
-            <tbody>
+            <tbody className="bg-white">
               {table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-b hover:bg-muted/50">
+                  <tr key={row.id} className="border-b hover:bg-muted/50 bg-white">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Layers, Phone, Route, Settings, GitBranch, Link2 } from "lucide-react";
+import { Layers, Phone, Route, Settings, GitBranch, Link2, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminTelephonyMenuItems = [
@@ -11,6 +11,12 @@ const adminTelephonyMenuItems = [
     href: "/dashboard/settings/admin/telephony/twilio",
     icon: Settings,
     description: "Configure Twilio API credentials",
+  },
+  {
+    title: "Credential Lists",
+    href: "/dashboard/settings/admin/telephony/credential-lists",
+    icon: Key,
+    description: "Manage Twilio credential lists and credentials",
   },
   {
     title: "Trunks",
@@ -51,11 +57,7 @@ export function AdminTelephonySecondaryMenu() {
     <nav className="space-y-1">
       {adminTelephonyMenuItems.map((item) => {
         const Icon = item.icon;
-        // Handle active state: exact match or legacy routes for trunks
-        const isActive = pathname === item.href || 
-          (item.href === "/dashboard/settings/admin/telephony/trunks" && 
-           (pathname === "/dashboard/settings/admin/telephony/outbound" || 
-            pathname === "/dashboard/settings/admin/telephony/inbound"));
+        const isActive = pathname === item.href;
         
         return (
           <Link

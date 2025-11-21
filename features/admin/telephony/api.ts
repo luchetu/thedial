@@ -28,6 +28,15 @@ import type {
   UpdateDispatchRuleRequest,
   TwilioConfig,
   UpdateTwilioConfigRequest,
+  TwilioCredentialList,
+  TwilioCredential,
+  CreateTwilioCredentialListRequest,
+  UpdateTwilioCredentialListRequest,
+  CreateTwilioCredentialRequest,
+  UpdateTwilioCredentialRequest,
+  TwilioOriginationURL,
+  CreateTwilioOriginationURLRequest,
+  UpdateTwilioOriginationURLRequest,
 } from "./types";
 
 // Plans
@@ -205,7 +214,11 @@ export function getTwilioTrunks() {
 }
 
 export function getTwilioTrunk(id: string) {
-  return http<TwilioTrunk>(`/admin/settings/twilio/trunks/${id}`);
+  return http<TwilioTrunk>(`/admin/settings/twilio/trunks/${id}`).then((data) => {
+    console.log("[API] getTwilioTrunk response:", data);
+    console.log("[API] getTwilioTrunk.originationSipUri:", data?.originationSipUri);
+    return data;
+  });
 }
 
 export function createTwilioTrunk(data: CreateTwilioTrunkRequest) {
@@ -224,6 +237,101 @@ export function updateTwilioTrunk(id: string, data: UpdateTwilioTrunkRequest) {
 
 export function deleteTwilioTrunk(id: string) {
   return http<void>(`/admin/settings/twilio/trunks/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// Twilio Credential Lists
+export function getTwilioCredentialLists() {
+  return http<TwilioCredentialList[]>(`/admin/settings/twilio/credential-lists`);
+}
+
+export function getTwilioCredentialList(sid: string) {
+  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists/${sid}`);
+}
+
+export function createTwilioCredentialList(data: CreateTwilioCredentialListRequest) {
+  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateTwilioCredentialList(sid: string, data: UpdateTwilioCredentialListRequest) {
+  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists/${sid}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteTwilioCredentialList(sid: string) {
+  return http<void>(`/admin/settings/twilio/credential-lists/${sid}`, {
+    method: "DELETE",
+  });
+}
+
+// Twilio Credentials (within credential lists)
+export function getTwilioCredentials(credentialListSid: string) {
+  return http<TwilioCredential[]>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials`);
+}
+
+export function getTwilioCredential(credentialListSid: string, credentialSid: string) {
+  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`);
+}
+
+export function createTwilioCredential(credentialListSid: string, data: CreateTwilioCredentialRequest) {
+  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateTwilioCredential(
+  credentialListSid: string,
+  credentialSid: string,
+  data: UpdateTwilioCredentialRequest
+) {
+  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteTwilioCredential(credentialListSid: string, credentialSid: string) {
+  return http<void>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
+    method: "DELETE",
+  });
+}
+
+// Twilio Origination URLs (per trunk)
+export function getTwilioOriginationURLs(trunkSid: string) {
+  return http<TwilioOriginationURL[]>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls`);
+}
+
+export function getTwilioOriginationURL(trunkSid: string, originationUrlSid: string) {
+  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`);
+}
+
+export function createTwilioOriginationURL(trunkSid: string, data: CreateTwilioOriginationURLRequest) {
+  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateTwilioOriginationURL(
+  trunkSid: string,
+  originationUrlSid: string,
+  data: UpdateTwilioOriginationURLRequest
+) {
+  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteTwilioOriginationURL(trunkSid: string, originationUrlSid: string) {
+  return http<void>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
     method: "DELETE",
   });
 }

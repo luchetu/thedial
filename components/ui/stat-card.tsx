@@ -84,7 +84,7 @@ export function StatsGrid({ stats, columns = 3, className, cardClassName, gridTe
         <div
           key={index}
           className={cn(
-            "rounded-md border bg-card/50 px-2 py-1.5 shadow-sm transition-transform hover:scale-[1.005] h-[88px] flex flex-col justify-between",
+            "rounded-md border bg-white px-2 py-1.5 transition-transform hover:scale-[1.005] h-[88px] flex flex-col justify-between",
             cardClassName
           )}
         >
