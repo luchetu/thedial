@@ -30,7 +30,6 @@ import { CustomConfigurationDialog } from "@/features/admin/telephony/components
 import {
   useTrunks,
   useDeleteTrunk,
-  useRoutingProfilesByTrunk,
   useRoutingProfilesForAllTrunks,
 } from "@/features/admin/telephony/hooks/useTrunks";
 import type { Trunk } from "@/features/admin/telephony/types";
@@ -42,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import type { ColumnFiltersState, ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,21 +83,6 @@ export default function TrunksPage() {
     });
     return counts;
   }, [trunks, routingProfileQueries]);
-
-  // Fetch routing profiles for the trunk being deleted
-  const { data: routingProfilesData } = useRoutingProfilesByTrunk(
-    trunkToDelete?.id || "",
-    { enabled: !!trunkToDelete && deleteDialogOpen }
-  );
-
-  // Derive routing profiles count directly from query data
-  const routingProfilesForDelete = useMemo(() => {
-    if (!routingProfilesData || !trunkToDelete) return null;
-    return {
-      outbound: routingProfilesData.outbound.length,
-      inbound: routingProfilesData.inbound.length,
-    };
-  }, [routingProfilesData, trunkToDelete]);
 
   const handleEdit = useCallback((trunk: Trunk) => {
     setEditingTrunk(trunk);
@@ -175,6 +160,7 @@ export default function TrunksPage() {
     );
   }
 
+  const routingProfilesForDelete = trunkToDelete ? routingProfileCounts[trunkToDelete.id] : null;
   const canDelete = trunkToDelete && routingProfilesForDelete &&
     routingProfilesForDelete.outbound === 0 && routingProfilesForDelete.inbound === 0;
 

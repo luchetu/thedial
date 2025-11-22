@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
-import { TrunkBasicInfoForm } from "./TrunkBasicInfoForm";
+import { TrunkRegistryForm } from "./TrunkRegistryForm";
 import { TrunkConfigurationForm } from "./TrunkConfigurationForm";
 import type {
   CreateTrunkRequest,
@@ -110,7 +110,7 @@ export function TrunkForm({
     <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-6">
         {showBasicInfo && (
-          <TrunkBasicInfoForm form={form} isLoading={isLoading} showTitle={mode === "edit"} lockType={lockType} />
+          <TrunkRegistryForm form={form} isLoading={isLoading} showTitle={mode === "edit"} lockType={lockType} />
         )}
         
         {showConfiguration && (

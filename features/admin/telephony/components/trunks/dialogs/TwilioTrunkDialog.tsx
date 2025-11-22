@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { BaseTrunkDialog } from "./BaseTrunkDialog";
 import { AddTrunkTwilioForm } from "../AddTrunkTwilioForm";
 import { useTrunk } from "@/features/admin/telephony/hooks/useTrunks";
-import { useTwilioTrunk } from "@/features/admin/telephony/hooks/useTwilioTrunks";
 import type { Trunk } from "@/features/admin/telephony/types";
 import type { TrunkFormValues } from "../types";
 
@@ -28,42 +27,22 @@ export function TwilioTrunkDialog({
     enabled: isEditMode && !!trunk?.id && open,
   });
 
-  // Fetch the Twilio trunk details using externalId
-  const twilioTrunkId = fullTrunkData?.externalId || trunk?.externalId;
-  const { data: twilioTrunk } = useTwilioTrunk(twilioTrunkId || "", {
-    enabled: isEditMode && !!twilioTrunkId && open,
-  });
+  // Use fullTrunkData if available, otherwise fall back to trunk prop
+  const trunkData = fullTrunkData || trunk;
 
-  // Parse configuration from trunk data
+  // Parse default values - only basic trunk info, not configuration
+  // Configuration is handled separately via TwilioConfigurationDialog
   const defaultValues = useMemo<Partial<TrunkFormValues> | undefined>(() => {
-    if (!isEditMode || !trunk) return undefined;
+    if (!isEditMode || !trunkData) return undefined;
 
-    const baseValues: Partial<TrunkFormValues> = {
-      name: trunk.name,
+    // Only pass basic trunk info - configuration should be handled via Configure button
+    return {
+      name: trunkData.name,
       type: "twilio", // Always twilio for this dialog
-      direction: trunk.direction,
-      status: trunk.status,
+      direction: trunkData.direction,
+      status: trunkData.status,
     };
-
-    // Populate from Twilio trunk data
-    if (twilioTrunk) {
-      baseValues.terminationSipDomain = twilioTrunk.terminationSipDomain || twilioTrunk.domainName;
-      if (twilioTrunk.originationSipUri != null) {
-        baseValues.originationSipUri = twilioTrunk.originationSipUri;
-      }
-
-      // Determine credential mode based on whether credential list exists
-      if (twilioTrunk.credentialListSid) {
-        baseValues.credentialMode = "existing";
-        baseValues.credentialListSid = twilioTrunk.credentialListSid;
-        baseValues.credentialListName = twilioTrunk.credentialListName || undefined;
-      } else {
-        baseValues.credentialMode = "create";
-      }
-    }
-
-    return baseValues;
-  }, [isEditMode, trunk, twilioTrunk]);
+  }, [isEditMode, trunkData]);
 
   const handleSuccess = () => {
     onOpenChange(false);
@@ -82,13 +61,13 @@ export function TwilioTrunkDialog({
       }
     >
       <AddTrunkTwilioForm
-        key={`twilio-${trunk?.id || "new"}-${twilioTrunk?.id || "loading"}`}
+        key={`twilio-${trunk?.id || "new"}`}
         defaultValues={defaultValues}
         onSubmit={handleSuccess}
         submitLabel={isEditMode ? "Update Trunk" : "Create Trunk"}
         isEditMode={isEditMode}
         trunkId={trunk?.id}
-        twilioTrunkSid={twilioTrunkId || undefined}
+        twilioTrunkSid={trunkData?.externalId || trunk?.externalId || undefined}
       />
     </BaseTrunkDialog>
   );

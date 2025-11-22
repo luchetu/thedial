@@ -9,8 +9,10 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type OnChangeFn,
+  type Table as TanStackTable,
 } from "@tanstack/react-table";
 import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef } from "react";
 
 
 interface DataTableProps<TData, TValue = unknown> {
@@ -19,6 +21,7 @@ interface DataTableProps<TData, TValue = unknown> {
   emptyMessage?: string;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+  onTableInit?: (table: TanStackTable<TData>) => void;
 }
 
 export function DataTable<TData, TValue = unknown>({
@@ -27,6 +30,7 @@ export function DataTable<TData, TValue = unknown>({
   emptyMessage = "No results.",
   columnFilters,
   onColumnFiltersChange,
+  onTableInit,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -38,6 +42,14 @@ export function DataTable<TData, TValue = unknown>({
     },
     onColumnFiltersChange,
   });
+
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (onTableInit && !initializedRef.current) {
+      onTableInit(table);
+      initializedRef.current = true;
+    }
+  }, [table, onTableInit]);
 
   return (
     <Card className="bg-white">

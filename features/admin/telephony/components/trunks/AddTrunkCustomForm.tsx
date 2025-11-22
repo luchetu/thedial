@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
-import { TrunkBasicInfoForm } from "./TrunkBasicInfoForm";
+import { TrunkRegistryForm } from "./TrunkRegistryForm";
 import { useCreateTrunk, useUpdateTrunk } from "@/features/admin/telephony/hooks/useTrunks";
 import type {
   CreateTrunkRequest,
@@ -82,7 +82,7 @@ export function AddTrunkCustomForm({
     <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-6">
         {/* Custom trunks only need basic info */}
-        <TrunkBasicInfoForm form={form} isLoading={isLoading} showTitle={true} lockType={true} />
+        <TrunkRegistryForm form={form} isLoading={isLoading} showTitle={true} lockType={true} />
 
         {/* Submit Button */}
         <div className="pt-4 border-t">
