@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
 import { TrunkRegistryForm } from "./TrunkRegistryForm";
-import { TrunkStepper } from "./TrunkStepper";
+import { TrunkStepper, TrunkStepperNavigation } from "./TrunkStepper";
 import { LiveKitOutboundConfigurationForm } from "./LiveKitOutboundConfigurationForm";
 import { useCreateTrunk, useUpdateTrunk, useConfigureTrunk } from "@/features/admin/telephony/hooks/useTrunks";
 import type {
@@ -151,21 +151,11 @@ export function AddTrunkLiveKitOutboundForm({
   return (
     <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-6">
-        {/* Step Indicator & Navigation - Only show in create mode */}
+        {/* Step Indicator - Only show in create mode */}
         {!isEditMode && (
           <TrunkStepper
             currentStep={currentStep}
             totalSteps={2}
-            onNext={handleNext}
-            onBack={handleBack}
-            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
-            canGoBack={currentStep > 0}
-            isLoading={isLoading}
-            submitButton={
-              <FormSubmitButton loading={isLoading} variant="secondary">
-                {submitLabel}
-              </FormSubmitButton>
-            }
           />
         )}
 
@@ -184,6 +174,24 @@ export function AddTrunkLiveKitOutboundForm({
               <LiveKitOutboundConfigurationForm form={form} isLoading={isLoading} showTitle={true} />
             )}
           </>
+        )}
+
+        {/* Navigation Buttons - Only show in create mode */}
+        {!isEditMode && (
+          <TrunkStepperNavigation
+            currentStep={currentStep}
+            totalSteps={2}
+            onNext={handleNext}
+            onBack={handleBack}
+            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
+            canGoBack={currentStep > 0}
+            isLoading={isLoading}
+            submitButton={
+              <FormSubmitButton loading={isLoading} variant="secondary">
+                {submitLabel}
+              </FormSubmitButton>
+            }
+          />
         )}
 
         {/* Submit Button - Only in edit mode */}

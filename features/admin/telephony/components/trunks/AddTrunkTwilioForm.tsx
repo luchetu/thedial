@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TrunkRegistryForm } from "./TrunkRegistryForm";
-import { TrunkStepper } from "./TrunkStepper";
+import { TrunkStepper, TrunkStepperNavigation } from "./TrunkStepper";
 import { useTwilioCredentialLists } from "@/features/admin/telephony/hooks/useTwilioCredentialLists";
 import { useCreateTrunk, useUpdateTrunk, useConfigureTrunk } from "@/features/admin/telephony/hooks/useTrunks";
 import { OriginationURLsSection } from "./OriginationURLsSection";
@@ -67,7 +67,7 @@ export function AddTrunkTwilioForm({
       direction: "outbound",
       externalId: defaultValues?.externalId || "",
       status: defaultValues?.status || "active",
-      // Configuration fields - not passed from TwilioTrunkDialog, only used when creating
+      // Configuration fields - not passed from TrunkDialog, only used when creating
       terminationSipDomain: "",
       originationSipUri: "",
       credentialMode: "create",
@@ -236,21 +236,11 @@ export function AddTrunkTwilioForm({
   return (
     <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-6">
-        {/* Step Indicator & Navigation - Only show in create mode */}
+        {/* Step Indicator - Only show in create mode */}
         {!isEditMode && (
           <TrunkStepper
             currentStep={currentStep}
             totalSteps={2}
-            onNext={handleNext}
-            onBack={handleBack}
-            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
-            canGoBack={currentStep > 0}
-            isLoading={isLoading}
-            submitButton={
-              <FormSubmitButton loading={isLoading} variant="secondary">
-                {submitLabel}
-              </FormSubmitButton>
-            }
           />
         )}
 
@@ -501,6 +491,24 @@ export function AddTrunkTwilioForm({
               </div>
             )}
           </>
+        )}
+
+        {/* Navigation Buttons - Only show in create mode */}
+        {!isEditMode && (
+          <TrunkStepperNavigation
+            currentStep={currentStep}
+            totalSteps={2}
+            onNext={handleNext}
+            onBack={handleBack}
+            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
+            canGoBack={currentStep > 0}
+            isLoading={isLoading}
+            submitButton={
+              <FormSubmitButton loading={isLoading} variant="secondary">
+                {submitLabel}
+              </FormSubmitButton>
+            }
+          />
         )}
 
         {/* Submit Button - Only in edit mode */}

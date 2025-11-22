@@ -19,10 +19,7 @@ import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { getTrunkColumns } from "@/features/admin/telephony/components/trunks/columns";
-import { TwilioTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/TwilioTrunkDialog";
-import { LiveKitOutboundTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitOutboundTrunkDialog";
-import { LiveKitInboundTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitInboundTrunkDialog";
-import { CustomTrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/CustomTrunkDialog";
+import { TrunkDialog } from "@/features/admin/telephony/components/trunks/dialogs/TrunkDialog";
 import { TwilioConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/TwilioConfigurationDialog";
 import { LiveKitOutboundConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitOutboundConfigurationDialog";
 import { LiveKitInboundConfigurationDialog } from "@/features/admin/telephony/components/trunks/dialogs/LiveKitInboundConfigurationDialog";
@@ -407,74 +404,23 @@ export default function TrunksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Dialogs - Show appropriate dialog based on trunk type */}
+      {/* Create/Edit Dialog */}
       {isCreateDialogOpen && (
-        <>
-          {(editingTrunk?.type === "twilio" || initialTrunkType === "twilio") && (
-            <TwilioTrunkDialog
-              open={isCreateDialogOpen}
-              onOpenChange={(open) => {
-                setIsCreateDialogOpen(open);
-                if (!open) {
-                  setEditingTrunk(null);
-                  setInitialTrunkType(null);
-                }
-              }}
-              trunk={editingTrunk || undefined}
-              onSuccess={() => {
-                // Query will automatically refetch
-              }}
-            />
-          )}
-          {(editingTrunk?.type === "livekit_outbound" || initialTrunkType === "livekit_outbound") && (
-            <LiveKitOutboundTrunkDialog
-              open={isCreateDialogOpen}
-              onOpenChange={(open) => {
-                setIsCreateDialogOpen(open);
-                if (!open) {
-                  setEditingTrunk(null);
-                  setInitialTrunkType(null);
-                }
-              }}
-              trunk={editingTrunk || undefined}
-              onSuccess={() => {
-                // Query will automatically refetch
-              }}
-            />
-          )}
-          {(editingTrunk?.type === "livekit_inbound" || initialTrunkType === "livekit_inbound") && (
-            <LiveKitInboundTrunkDialog
-              open={isCreateDialogOpen}
-              onOpenChange={(open) => {
-                setIsCreateDialogOpen(open);
-                if (!open) {
-                  setEditingTrunk(null);
-                  setInitialTrunkType(null);
-                }
-              }}
-              trunk={editingTrunk || undefined}
-              onSuccess={() => {
-                // Query will automatically refetch
-              }}
-            />
-          )}
-          {(editingTrunk?.type === "custom" || initialTrunkType === "custom") && (
-            <CustomTrunkDialog
-        open={isCreateDialogOpen}
-        onOpenChange={(open) => {
-          setIsCreateDialogOpen(open);
-          if (!open) {
-            setEditingTrunk(null);
-            setInitialTrunkType(null);
-          }
-        }}
-              trunk={editingTrunk || undefined}
-        onSuccess={() => {
-          // Query will automatically refetch
-        }}
-      />
-          )}
-        </>
+        <TrunkDialog
+          open={isCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setEditingTrunk(null);
+              setInitialTrunkType(null);
+            }
+          }}
+          trunk={editingTrunk || undefined}
+          trunkType={initialTrunkType || undefined}
+          onSuccess={() => {
+            // Query will automatically refetch
+          }}
+        />
       )}
 
       {/* Configure Dialogs - Show appropriate dialog based on trunk type */}
