@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser"
 
@@ -8,11 +7,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading, error } = useCurrentUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isLoading && (error || !user)) {
-      router.push("/auth/login")
-    }
-  }, [user, isLoading, error, router])
+  if (error || !user) {
+    router.push("/auth/login")
+    return null
+  }
 
   // Show nothing while loading
   if (isLoading) {
@@ -21,11 +19,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
-  }
-
-  // Don't render children if not authenticated
-  if (error || !user) {
-    return null
   }
 
   return <>{children}</>
