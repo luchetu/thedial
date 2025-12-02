@@ -40,7 +40,9 @@ export interface SearchPhoneNumbersParams {
 export interface UserPhoneNumber {
   id: string
   userId: string
-  twilioSid: string
+  provider: string // 'twilio', 'vonage', 'sms-verified', etc.
+  providerId: string // Provider-specific identifier
+  twilioSid: string // DEPRECATED: Use providerId. Kept for backward compatibility
   phoneNumber: string
   friendlyName: string
   country: string

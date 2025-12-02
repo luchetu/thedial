@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQueryState } from "nuqs";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhoneNumbers";
 import { useCreateOutboundCall } from "@/features/livekit/hooks/useCreateOutboundCall";
@@ -37,11 +38,12 @@ import { Phone } from "lucide-react";
 interface OutboundCallDialerProps {
   onCallStart: (call: { roomName: string; identity: string; callerNumber?: string; callerName?: string }) => void;
   contactId?: string;
-  phoneNumber?: string;
   activeCall?: { roomName: string; identity: string; callerNumber?: string; callerName?: string } | null;
 }
 
-export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, activeCall }: OutboundCallDialerProps) {
+export function OutboundCallDialer({ onCallStart, contactId, activeCall }: OutboundCallDialerProps) {
+  // Sync phone number with URL for shareable state
+  const [urlPhoneNumber, setUrlPhoneNumber] = useQueryState("number");
   const [destinationNumber, setDestinationNumber] = useState("");
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +72,9 @@ export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, active
 
   // Helper function to get phone number type
   const getPhoneNumberType = (phoneNumber: typeof activePhoneNumbers[0]) => {
-    const sid = phoneNumber.twilioSid || "";
-    const isDial = sid && !sid.startsWith("non-twilio-");
+    // Use provider field if available, otherwise fall back to twilioSid check for backward compatibility
+    const provider = phoneNumber.provider || (phoneNumber.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
+    const isDial = provider === "twilio" || provider === "vonage" || provider === "livekit"; // Add other dial-capable providers
     return isDial ? "Dial" : "Caller ID";
   };
 
@@ -84,23 +87,28 @@ export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, active
     }
   }, [activePhoneNumbers, selectedPhoneNumberId, isLoadingPhoneNumbers]);
 
-  // Pre-populate phone number and name from contact data or phoneNumber prop
+  // Pre-populate phone number and name from contact data or URL query parameter
   useEffect(() => {
     if (contact?.phone_number) {
       // Format the phone number for display
       const formatted = formatPhoneNumber(contact.phone_number);
       // Only update if the value actually changed to avoid unnecessary re-renders
       setDestinationNumber((prev) => prev !== formatted ? formatted : prev);
-    } else if (phoneNumber) {
-      // Pre-populate from phoneNumber query parameter
-      const formatted = formatPhoneNumber(phoneNumber);
+      // Sync to URL if different
+      const normalized = normalizeToE164(contact.phone_number);
+      if (normalized && urlPhoneNumber !== normalized) {
+        setUrlPhoneNumber(normalized);
+      }
+    } else if (urlPhoneNumber) {
+      // Pre-populate from URL query parameter
+      const formatted = formatPhoneNumber(urlPhoneNumber);
       setDestinationNumber((prev) => prev !== formatted ? formatted : prev);
-    } else if (!contactId && !phoneNumber && destinationNumber) {
-      // Clear destination number if no contactId and no phoneNumber and contact data is cleared
+    } else if (!contactId && !urlPhoneNumber && destinationNumber) {
+      // Clear destination number if no contactId and no URL phone number and contact data is cleared
       setDestinationNumber("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contact?.phone_number, contactId, phoneNumber]);
+  }, [contact?.phone_number, contactId, urlPhoneNumber]);
 
   // Get contact name for display
   const contactName = contact?.name;
@@ -286,7 +294,11 @@ export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, active
                             key={contact.id}
                             value={`${contact.name} ${contact.phone_number}`}
                             onSelect={() => {
-                              setDestinationNumber(formatPhoneNumber(contact.phone_number));
+                              const normalized = normalizeToE164(contact.phone_number);
+                              const formatted = formatPhoneNumber(contact.phone_number);
+                              setDestinationNumber(formatted);
+                              // Update URL with selected contact's phone number
+                              setUrlPhoneNumber(normalized);
                               setContactSearchOpen(false);
                               setContactSearchQuery("");
                             }}
@@ -307,9 +319,30 @@ export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, active
                 type="tel"
                 placeholder="+1 (555) 123-4567 or search contacts"
                 value={destinationNumber}
-                onChange={(e) => setDestinationNumber(formatPhoneNumber(e.target.value))}
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  setDestinationNumber(formatted);
+                  // Clear URL param when input is cleared
+                  if (!formatted.trim()) {
+                    setUrlPhoneNumber(null);
+                  }
+                }}
+                onBlur={() => {
+                  // Update URL when input loses focus and has a valid phone number
+                  const normalized = normalizeToE164(destinationNumber.trim());
+                  if (normalized && isValidE164(normalized)) {
+                    setUrlPhoneNumber(normalized);
+                  } else if (!destinationNumber.trim()) {
+                    setUrlPhoneNumber(null);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && destinationNumber.trim() && selectedPhoneNumberId) {
+                    // Update URL before dialing
+                    const normalized = normalizeToE164(destinationNumber.trim());
+                    if (normalized && isValidE164(normalized)) {
+                      setUrlPhoneNumber(normalized);
+                    }
                     handleDial();
                   }
                 }}

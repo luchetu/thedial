@@ -10,7 +10,6 @@ import { OutboundCallDialer } from "@/components/livekit/OutboundCallDialer";
 export default function DialPage() {
   const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string; callerNumber?: string; callerName?: string } | null>(null);
   const [contactId] = useQueryState("contact");
-  const [phoneNumber] = useQueryState("number");
 
   return (
     <SidebarInset className="bg-muted/30">
@@ -41,7 +40,6 @@ export default function DialPage() {
                 <OutboundCallDialer 
                   onCallStart={setActiveCall}
                   contactId={contactId ?? undefined}
-                  phoneNumber={phoneNumber ?? undefined}
                   activeCall={activeCall}
                 />
               </CardContent>
