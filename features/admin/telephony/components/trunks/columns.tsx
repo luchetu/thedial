@@ -92,18 +92,22 @@ export function getTrunkColumns({ onEdit, onDelete, onConfigure, routingProfileC
       cell: (info) => (
         <div className="font-medium">{info.getValue()}</div>
       ),
+      filterFn: "includesString", // Case-insensitive string inclusion for name search
     }),
     columnHelper.accessor("type", {
       header: "Type",
       cell: (info) => getTypeBadge(info.getValue()),
+      filterFn: "equalsString", // Exact match for type
     }),
     columnHelper.accessor("direction", {
       header: "Direction",
       cell: (info) => getDirectionBadge(info.getValue()),
+      filterFn: "equalsString", // Exact match for direction
     }),
     columnHelper.accessor("status", {
       header: "Status",
       cell: (info) => getStatusBadge(info.getValue()),
+      filterFn: "equalsString", // Exact match for status
     }),
     columnHelper.display({
       id: "usage",
@@ -128,6 +132,7 @@ export function getTrunkColumns({ onEdit, onDelete, onConfigure, routingProfileC
           </div>
         );
       },
+      enableColumnFilter: false, // Disable filtering for usage column
     }),
     columnHelper.accessor("createdAt", {
       header: "Created at",
@@ -139,9 +144,11 @@ export function getTrunkColumns({ onEdit, onDelete, onConfigure, routingProfileC
           <span className="text-muted-foreground">-</span>
         );
       },
+      enableColumnFilter: false, // Disable filtering for date column
     }),
     columnHelper.display({
       id: "actions",
+      enableColumnFilter: false, // Disable filtering for actions column
       header: () => <div className="text-right">Actions</div>,
       cell: (info) => {
         const trunk = info.row.original;

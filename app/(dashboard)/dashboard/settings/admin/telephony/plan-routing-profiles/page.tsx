@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
-import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { getPlanRoutingProfileColumns } from "@/features/admin/telephony/components/plan-routing-profiles/columns";
@@ -169,7 +168,7 @@ export default function PlanRoutingProfilesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={resetFilters}>
+                  <Button variant="primary-outline" size="sm" onClick={resetFilters}>
                     <X className="size-4" />
                     Clear filters
                   </Button>
@@ -191,21 +190,13 @@ export default function PlanRoutingProfilesPage() {
                   <h3 className="text-lg font-medium">Plan routing profile mappings</h3>
                 </div>
 
-                {isLoading && mappings.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
-                    <WaveLoader className="text-primary" />
-                    <span>Loading mappings…</span>
-                  </div>
-                ) : (
-                  <DataTable
-                    data={mappings}
-                    // @ts-expect-error - TanStack Table column type inference limitation
-                    columns={columns}
-                    emptyMessage={
-                      isLoading ? "Loading mappings…" : "No plan routing profile mappings found."
-                    }
-                  />
-                )}
+                <DataTable
+                  data={mappings}
+                  // @ts-expect-error - TanStack Table column type inference limitation
+                  columns={columns}
+                  emptyMessage="No plan routing profile mappings found."
+                  isLoading={isLoading}
+                />
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ interface FormSubmitButtonProps {
   disabled?: boolean;
   loading?: boolean;
   className?: string;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'secondary-outline' | 'primary-outline' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 

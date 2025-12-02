@@ -8,8 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { PlanForm, type PlanFormSubmission } from "@/features/admin/telephony/components/plans/PlanForm";
-import { PlanRoutingProfilesSection } from "@/features/admin/telephony/components/plans/PlanRoutingProfilesSection";
-import { useCreatePlan, useUpdatePlan, usePlans } from "@/features/admin/telephony/hooks/usePlans";
+import { useCreatePlan, useUpdatePlan } from "@/features/admin/telephony/hooks/usePlans";
 import type { Plan, CreatePlanRequest, UpdatePlanRequest } from "@/features/admin/telephony/types";
 import { toastError, toastSuccess } from "@/lib/toast";
 
@@ -24,7 +23,6 @@ const ensureNumber = (value?: number) => (typeof value === "number" ? value : 0)
 export const PlanDialog = ({ open, onOpenChange, plan }: PlanDialogProps) => {
   const createPlan = useCreatePlan();
   const updatePlan = useUpdatePlan();
-  const { data: plansData = [] } = usePlans();
 
   const isEditMode = Boolean(plan);
 
@@ -113,10 +111,6 @@ export const PlanDialog = ({ open, onOpenChange, plan }: PlanDialogProps) => {
             isLoading={isLoading}
             submitLabel={isEditMode ? "Save changes" : "Create plan"}
           />
-          
-          {isEditMode && plan && (
-            <PlanRoutingProfilesSection plan={plan} plans={plansData} />
-          )}
         </div>
       </SheetContent>
     </Sheet>

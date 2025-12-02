@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
-import { TrunkBasicInfoForm } from "./TrunkBasicInfoForm";
+import { TrunkRegistryForm } from "./TrunkRegistryForm";
 import { TrunkConfigurationForm } from "./TrunkConfigurationForm";
 import type {
   CreateTrunkRequest,
@@ -17,6 +17,9 @@ interface TrunkFormProps {
   submitLabel?: string;
   mode?: "create" | "edit" | "configuration-only";
   lockType?: boolean; // If true, lock the type field (type is pre-selected)
+  isEditMode?: boolean; // Pass through to configuration form
+  twilioTrunkSid?: string; // Twilio trunk SID for managing origination URLs
+  existingCredentialListSid?: string; // Existing credential list SID to autofill when switching to "existing" mode
 }
 
 export function TrunkForm({
@@ -26,6 +29,9 @@ export function TrunkForm({
   submitLabel = "Create Trunk",
   mode = "create",
   lockType = false,
+  isEditMode = false,
+  twilioTrunkSid,
+  existingCredentialListSid,
 }: TrunkFormProps) {
   const form = useForm<TrunkFormValues>({
     defaultValues: {
@@ -78,15 +84,8 @@ export function TrunkForm({
         request.authUsername = values.authUsername.trim();
         request.authPassword = values.authPassword.trim();
       } else if (values.type === "livekit_inbound") {
-        request.inboundNumbers = values.inboundNumberMode === "any" ? [] : values.inboundNumbers;
+        request.inboundNumbers = values.inboundNumbers || [];
         request.allowedNumbers = values.restrictAllowedNumbers ? values.allowedNumbers : [];
-        request.allowedAddresses = values.allowedAddresses;
-        if (values.inboundAuthUsername.trim()) {
-          request.inboundAuthUsername = values.inboundAuthUsername.trim();
-        }
-        if (values.inboundAuthPassword.trim()) {
-          request.inboundAuthPassword = values.inboundAuthPassword.trim();
-        }
         request.krispEnabled = values.krispEnabled;
       } else if (values.type === "twilio") {
         request.terminationSipDomain = values.terminationSipDomain.trim();
@@ -111,12 +110,20 @@ export function TrunkForm({
     <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-6">
         {showBasicInfo && (
-          <TrunkBasicInfoForm form={form} isLoading={isLoading} showTitle={mode === "edit"} lockType={lockType} />
+          <TrunkRegistryForm form={form} isLoading={isLoading} showTitle={mode === "edit"} lockType={lockType} />
         )}
         
         {showConfiguration && (
           <div className={showBasicInfo ? "border-t pt-6" : ""}>
-            <TrunkConfigurationForm form={form} isLoading={isLoading} showTitle={mode === "edit"} />
+            <TrunkConfigurationForm 
+              form={form} 
+              isLoading={isLoading} 
+              showTitle={mode === "edit"} 
+              isEditMode={isEditMode || mode === "edit" || mode === "configuration-only"}
+              twilioTrunkSid={twilioTrunkSid}
+              existingCredentialListSid={existingCredentialListSid}
+              trunkId={undefined}
+            />
           </div>
         )}
 

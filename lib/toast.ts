@@ -4,21 +4,24 @@ import { toast, type ExternalToast } from "sonner";
 const successDefaults: ExternalToast = {
   style: {
     backgroundColor: "#dcfce7",
-    color: "#166534",
+    color: "#000000",
+    fontWeight: "500",
   },
 };
 
 const errorDefaults: ExternalToast = {
   style: {
     backgroundColor: "#fee2e2",
-    color: "#b91c1c",
+    color: "#000000",
+    fontWeight: "500",
   },
 };
 
 const infoDefaults: ExternalToast = {
   style: {
     backgroundColor: "#e0f2fe",
-    color: "#075985",
+    color: "#000000",
+    fontWeight: "500",
   },
 };
 

@@ -44,15 +44,16 @@ const mapCreatePayload = (
   country: values.country,
   outboundProvider: values.outboundProvider,
   outboundTrunkRef: values.outboundTrunkRef,
-  outboundProviderConfig: values.outboundProviderConfig,
+  // Backend JSON columns are NOT NULL, so default to {} when omitted.
+  outboundProviderConfig: values.outboundProviderConfig ?? {},
   inboundProvider: values.inboundProvider,
   inboundTrunkRef: values.inboundTrunkRef,
-  inboundProviderConfig: values.inboundProviderConfig,
+  inboundProviderConfig: values.inboundProviderConfig ?? {},
   dispatchProvider: values.dispatchProvider,
   dispatchRuleRef: values.dispatchRuleRef,
-  dispatchMetadata: values.dispatchMetadata,
-  complianceRequirements: values.complianceRequirements,
-  recordingPolicy: values.recordingPolicy,
+  dispatchMetadata: values.dispatchMetadata ?? {},
+  complianceRequirements: values.complianceRequirements ?? {},
+  recordingPolicy: values.recordingPolicy ?? {},
 });
 
 const mapUpdatePayload = (

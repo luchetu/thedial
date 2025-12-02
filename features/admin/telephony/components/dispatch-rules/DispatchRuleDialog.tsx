@@ -17,7 +17,7 @@ import type {
   CreateDispatchRuleRequest,
   UpdateDispatchRuleRequest,
 } from "@/features/admin/telephony/types";
-import { useInboundTrunks } from "@/features/admin/telephony/hooks/useInboundTrunks";
+import { useTrunks } from "@/features/admin/telephony/hooks/useTrunks";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { useEffect, useMemo } from "react";
 
@@ -36,14 +36,45 @@ export const DispatchRuleDialog = ({
 }: DispatchRuleDialogProps) => {
   const createMutation = useCreateDispatchRule();
   const updateMutation = useUpdateDispatchRule();
+  // Fetch LiveKit inbound trunks from the unified trunks API
   const {
-    data: inboundTrunks = [],
+    data: trunksData = [],
     isLoading: isLoadingTrunks,
     isError: isInboundError,
     error: inboundError,
-  } = useInboundTrunks();
+  } = useTrunks({
+    provider: "livekit",
+    type: "livekit_inbound",
+  });
 
   const isEditMode = !!rule;
+
+  
+  const inboundTrunks = useMemo(() => {
+    const seen = new Set<string>();
+    return trunksData
+      .filter((trunk) => {
+        // Only include trunks with valid LiveKit trunk IDs
+        if (!trunk.externalId || trunk.externalId.trim() === "") {
+          return false;
+        }
+        // Only show active trunks (filter out inactive/pending/error states)
+        if (trunk.status && trunk.status !== "active") {
+          return false;
+        }
+        // Deduplicate by externalId (LiveKit trunk ID)
+        if (seen.has(trunk.externalId)) {
+          return false;
+        }
+        seen.add(trunk.externalId);
+        return true;
+      })
+      .map((trunk) => ({
+        trunkId: trunk.externalId!, // LiveKit trunk ID (e.g., "ST_...")
+        name: trunk.name,
+        id: trunk.id, // Internal UUID
+      }));
+  }, [trunksData]);
 
   useEffect(() => {
     if (isInboundError && inboundError) {
@@ -53,28 +84,19 @@ export const DispatchRuleDialog = ({
 
   useEffect(() => {
     if (!isLoadingTrunks && !isEditMode && open && inboundTrunks.length === 0) {
-      toastError("Create a LiveKit trunk before adding a dispatch rule.");
+      toastError("Create a LiveKit inbound trunk before adding a SIP dispatch rule.");
       onOpenChange(false);
     }
   }, [isLoadingTrunks, inboundTrunks.length, open, isEditMode, onOpenChange]);
 
-  const trunkOptions = (() => {
-    const base = inboundTrunks.map((trunk) => ({
-      id: trunk.trunkId,
-      name: trunk.name,
+  const trunkOptions = useMemo(() => {
+    // Only use inbound trunks - dispatch rules route inbound calls
+    // Only show valid, active trunks (no "not found" or error trunks)
+    return inboundTrunks.map((trunk) => ({
+      id: trunk.trunkId, // LiveKit trunk ID (e.g., "ST_...")
+      name: `${trunk.name} (${trunk.trunkId})`, // Show trunk ID for clarity
     }));
-
-    if (isEditMode && rule?.trunkIds && rule.trunkIds.length > 0) {
-      const existingIds = new Set(base.map((opt) => opt.id));
-      rule.trunkIds.forEach((id) => {
-        if (!existingIds.has(id)) {
-          base.push({ id, name: id });
-        }
-      });
-    }
-
-    return base;
-  })();
+  }, [inboundTrunks]);
 
   const handleSubmit = async (values: CreateDispatchRuleRequest) => {
     try {
@@ -112,19 +134,19 @@ export const DispatchRuleDialog = ({
         }
 
         await updateMutation.mutateAsync({ id: rule.id, data: payload });
-        toastSuccess("Dispatch rule updated successfully");
+        toastSuccess("SIP dispatch rule updated successfully");
       } else {
         await createMutation.mutateAsync(values);
-        toastSuccess("Dispatch rule created successfully");
+        toastSuccess("SIP dispatch rule created successfully");
       }
 
       onOpenChange(false);
       onSuccess?.();
     } catch {
-      toastError(
+        toastError(
         isEditMode
-          ? "Failed to update dispatch rule. Please try again."
-          : "Failed to create dispatch rule. Please try again."
+          ? "Failed to update SIP dispatch rule. Please try again."
+          : "Failed to create SIP dispatch rule. Please try again."
       );
     }
   };
@@ -136,12 +158,12 @@ export const DispatchRuleDialog = ({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? "Edit Dispatch Rule" : "Create Dispatch Rule"}
+            {isEditMode ? "Edit SIP Dispatch Rule" : "Create SIP Dispatch Rule"}
           </DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? "Update dispatch rule configuration below."
-              : "Create a new dispatch rule to route incoming calls to rooms or agents."}
+              ? "Update SIP dispatch rule configuration below."
+              : "Create a new SIP dispatch rule to route incoming SIP calls to rooms or agents."}
           </DialogDescription>
         </DialogHeader>
 

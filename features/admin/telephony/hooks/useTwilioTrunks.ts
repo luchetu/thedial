@@ -28,11 +28,11 @@ export function useTwilioTrunks(options?: { enabled?: boolean }) {
   });
 }
 
-export function useTwilioTrunk(id: string) {
+export function useTwilioTrunk(id: string, options?: { enabled?: boolean }) {
   return useQuery<TwilioTrunk>({
     queryKey: twilioTrunksKeys.detail(id),
     queryFn: () => getTwilioTrunk(id),
-    enabled: !!id,
+    enabled: options?.enabled !== false && !!id, // Default to true if id exists, but can be disabled
   });
 }
 

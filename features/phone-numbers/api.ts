@@ -22,7 +22,7 @@ export function searchPhoneNumbers(params: SearchPhoneNumbersParams) {
   if (params.limit) searchParams.set("limit", String(params.limit))
   
   return http<AvailablePhoneNumbersResponse>(
-    `/twilio/numbers/search?${searchParams.toString()}`
+    `/phone-numbers/search?${searchParams.toString()}`
   )
 }
 
@@ -59,7 +59,7 @@ export function buyPhoneNumber(input: BuyPhoneNumberInput) {
     requestBody.capabilitiesJSON = input.capabilities
   }
   
-  return http<BuyPhoneNumberResponse>(`/twilio/numbers/buy`, {
+  return http<BuyPhoneNumberResponse>(`/phone-numbers/buy`, {
     method: "POST",
     body: JSON.stringify(requestBody),
   })
@@ -91,6 +91,19 @@ export function updatePhoneNumberAIAssistant(id: string, enabled: boolean) {
   return http<void>(`/phone-numbers/${id}/ai-assistant`, {
     method: "POST",
     body: JSON.stringify({ enabled }),
+  })
+}
+
+export function updatePhoneNumberStatus(id: string, status: string) {
+  return http<void>(`/phone-numbers/${id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  })
+}
+
+export function releasePhoneNumber(id: string) {
+  return http<void>(`/phone-numbers/${id}/release`, {
+    method: "POST",
   })
 }
 

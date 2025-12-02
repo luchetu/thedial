@@ -10,6 +10,10 @@ export interface TrunkFormValues extends Record<string, unknown> {
   address: string;
   authUsername: string;
   authPassword: string;
+  livekitCredentialMode?: "existing" | "create"; // Credential mode for LiveKit outbound (use existing Twilio credentials or create new)
+  twilioTrunkSid?: string; // Twilio trunk SID for selecting credentials
+  twilioCredentialListSid?: string; // Credential list SID from selected Twilio trunk (for LiveKit outbound)
+  twilioCredentialSid?: string; // Selected credential SID (for LiveKit outbound)
   // LiveKit Inbound fields
   inboundNumberMode: "any" | "specific";
   inboundNumbers: string[];
@@ -21,8 +25,9 @@ export interface TrunkFormValues extends Record<string, unknown> {
   restrictAllowedNumbers: boolean;
   // Twilio fields
   terminationSipDomain: string;
+  originationSipUri?: string;
   credentialMode: "existing" | "create";
-  credentialListSid: string;
+  credentialListSid?: string; // Optional - only used when credentialMode is "existing"
   credentialListName: string;
   twilioUsername: string;
   twilioPassword: string;

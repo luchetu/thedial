@@ -11,26 +11,26 @@ import {
 } from "@/components/ui/select";
 import type { TrunkFormValues } from "./types";
 
-interface TrunkBasicInfoFormProps {
+interface TrunkRegistryFormProps {
   form: ReturnType<typeof useForm<TrunkFormValues>>;
   isLoading?: boolean;
   showTitle?: boolean;
   lockType?: boolean; // If true, hide the type field (type is pre-selected)
 }
 
-export function TrunkBasicInfoForm({
+export function TrunkRegistryForm({
   form,
   isLoading = false,
   showTitle = true,
   lockType = false,
-}: TrunkBasicInfoFormProps) {
+}: TrunkRegistryFormProps) {
   const trunkType = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.type);
 
   return (
     <div className="space-y-4">
       {showTitle && (
         <div>
-          <h3 className="text-lg font-semibold mb-1">Basic Information</h3>
+          <h3 className="text-lg font-semibold mb-1">Trunk Registry</h3>
           <p className="text-sm text-muted-foreground">
             Provide basic details about your trunk.
           </p>

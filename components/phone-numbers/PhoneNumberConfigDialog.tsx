@@ -15,11 +15,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  updatePhoneNumberFriendlyName, 
+import {
+  updatePhoneNumberFriendlyName,
   updatePhoneNumberForwarding,
   updatePhoneNumberAIAssistant,
-  getPhoneNumber 
+  updatePhoneNumberStatus,
+  releasePhoneNumber,
+  getPhoneNumber,
 } from "@/features/phone-numbers/api";
 import type { UserPhoneNumber } from "@/features/phone-numbers/types";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -42,6 +44,7 @@ export function PhoneNumberConfigDialog({
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   // Load phone number details when dialog opens
   useEffect(() => {
@@ -54,6 +57,7 @@ export function PhoneNumberConfigDialog({
           setForwardingEnabled(hasForwarding);
           setForwardingNumber(data.forwardingNumber || "");
           setAiAssistantEnabled(data.aiAssistantEnabled || false);
+          setStatus(data.status || null);
         })
         .catch((err) => {
           console.error("Failed to load phone number:", err);
@@ -88,6 +92,11 @@ export function PhoneNumberConfigDialog({
       // Update AI Assistant
       if (aiAssistantEnabled !== phoneNumber.aiAssistantEnabled) {
         updates.push(updatePhoneNumberAIAssistant(phoneNumber.id, aiAssistantEnabled));
+      }
+
+      // Status updates (excluding release, handled separately)
+      if (status && status !== phoneNumber.status && status !== "released") {
+        updates.push(updatePhoneNumberStatus(phoneNumber.id, status));
       }
 
       if (updates.length > 0) {
@@ -132,7 +141,7 @@ export function PhoneNumberConfigDialog({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-4">
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="friendly-name">Friendly Name</Label>
               <Input
@@ -160,6 +169,31 @@ export function PhoneNumberConfigDialog({
                   onCheckedChange={setAiAssistantEnabled}
                 />
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="status">Status</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Control whether this number is active or inactive in your workspace.
+                  </p>
+                </div>
+                <select
+                  id="status"
+                  value={status ?? phoneNumber?.status ?? "active"}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="border rounded-md px-2 py-1 text-sm bg-background"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              {phoneNumber?.status === "released" && (
+                <p className="text-xs text-destructive">
+                  This number has been released and can no longer be used.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -205,7 +239,30 @@ export function PhoneNumberConfigDialog({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-between gap-2 pt-4">
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/40"
+                disabled={isSaving || phoneNumber?.status === "released"}
+                onClick={async () => {
+                  if (!phoneNumber) return;
+                  setIsSaving(true);
+                  try {
+                    await releasePhoneNumber(phoneNumber.id);
+                    queryClient.invalidateQueries({ queryKey: ["phone-numbers", "user"] });
+                    toastSuccess("Phone number released");
+                    onOpenChange(false);
+                  } catch (error) {
+                    console.error("Failed to release phone number:", error);
+                    toastError("Failed to release phone number");
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+              >
+                Release Number
+              </Button>
+
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}

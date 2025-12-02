@@ -21,6 +21,8 @@ export type PhoneNumberOption = "buy" | "port" | "verify";
 interface AddPhoneNumberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialOption?: PhoneNumberOption;
+  mode?: "all" | "port-only";
 }
 
 const PHONE_NUMBER_OPTIONS = [
@@ -50,18 +52,24 @@ const PHONE_NUMBER_OPTIONS = [
 export function AddPhoneNumberDialog({
   open,
   onOpenChange,
+  initialOption = "buy",
+  mode = "all",
 }: AddPhoneNumberDialogProps) {
   const [selectedOption, setSelectedOption] =
-    useState<PhoneNumberOption>("buy");
+    useState<PhoneNumberOption>(initialOption);
 
-  // Reset to default option when dialog closes
+  // Reset to initial option when dialog opens/closes
   useEffect(() => {
+    // When dialog is closed, reset selection back to the initial option after
+    // a short delay so the close animation can finish.
     if (!open) {
-      // Small delay to allow dialog close animation
-      const timer = setTimeout(() => setSelectedOption("buy"), 200);
+      const timer = setTimeout(
+        () => setSelectedOption(initialOption),
+        200,
+      );
       return () => clearTimeout(timer);
     }
-  }, [open]);
+  }, [open, initialOption]);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
@@ -86,42 +94,55 @@ export function AddPhoneNumberDialog({
     console.log("Action triggered for:", selectedOption);
   }, [selectedOption]);
 
+  const effectiveOption: PhoneNumberOption =
+    mode === "port-only" ? "port" : selectedOption;
+
+  const showOptions = mode !== "port-only";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Add Phone Number</DialogTitle>
+          <DialogTitle>
+            {mode === "port-only" ? "Port Existing Number" : "Add Phone Number"}
+          </DialogTitle>
           <DialogDescription>
-            Choose how you want to add a phone number to Dialer
+            {mode === "port-only"
+              ? "Bring your existing phone number to Dial. You'll need your account information from your current carrier."
+              : "Choose how you want to add a phone number to Dial."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 overflow-y-auto flex-1 pr-2">
           {/* Left: Options */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium mb-3">Phone Number Options</h3>
-            {PHONE_NUMBER_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              return (
-                <PhoneNumberOptionCard
-                  key={option.id}
-                  id={option.id}
-                  title={option.title}
-                  description={option.description}
-                  icon={Icon}
-                  isSelected={selectedOption === option.id}
-                  onSelect={() => setSelectedOption(option.id)}
-                  badge={option.badge}
-                />
-              );
-            })}
-          </div>
+          {showOptions && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium mb-3">Phone Number Options</h3>
+              {PHONE_NUMBER_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <PhoneNumberOptionCard
+                    key={option.id}
+                    id={option.id}
+                    title={option.title}
+                    description={option.description}
+                    icon={Icon}
+                    isSelected={selectedOption === option.id}
+                    onSelect={() => setSelectedOption(option.id)}
+                    badge={option.badge}
+                  />
+                );
+              })}
+            </div>
+          )}
 
           {/* Right: Form */}
-          <div className="border-l border-muted pl-6 pr-2">
-            {selectedOption === "buy" && <BuyPhoneNumberForm onSuccess={() => onOpenChange(false)} />}
-            {selectedOption === "verify" && <VerifyPhoneNumberForm />}
-            {selectedOption === "port" && <PortPhoneNumberForm />}
+          <div className={showOptions ? "border-l border-muted pl-6 pr-2" : ""}>
+            {effectiveOption === "buy" && (
+              <BuyPhoneNumberForm onSuccess={() => onOpenChange(false)} />
+            )}
+            {effectiveOption === "verify" && <VerifyPhoneNumberForm />}
+            {effectiveOption === "port" && <PortPhoneNumberForm />}
           </div>
         </div>
 
@@ -130,7 +151,7 @@ export function AddPhoneNumberDialog({
             Cancel
           </Button>
           <Button variant="secondary" className="text-white" onClick={handleAction}>
-            {getActionButtonText(selectedOption)}
+            {getActionButtonText(effectiveOption)}
           </Button>
         </DialogFooter>
       </DialogContent>

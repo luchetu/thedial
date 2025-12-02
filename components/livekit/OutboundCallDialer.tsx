@@ -5,10 +5,26 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhoneNumbers";
 import { useCreateOutboundCall } from "@/features/livekit/hooks/useCreateOutboundCall";
 import { useContact } from "@/features/contacts/hooks/useContact";
+import { useContacts } from "@/features/contacts/hooks/useContacts";
 import { formatPhoneNumber, normalizeToE164, isValidE164 } from "@/lib/utils/phone";
+import { User } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -21,13 +37,16 @@ import { Phone } from "lucide-react";
 interface OutboundCallDialerProps {
   onCallStart: (call: { roomName: string; identity: string; callerNumber?: string; callerName?: string }) => void;
   contactId?: string;
+  phoneNumber?: string;
   activeCall?: { roomName: string; identity: string; callerNumber?: string; callerName?: string } | null;
 }
 
-export function OutboundCallDialer({ onCallStart, contactId, activeCall }: OutboundCallDialerProps) {
+export function OutboundCallDialer({ onCallStart, contactId, phoneNumber, activeCall }: OutboundCallDialerProps) {
   const [destinationNumber, setDestinationNumber] = useState("");
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [contactSearchOpen, setContactSearchOpen] = useState(false);
+  const [contactSearchQuery, setContactSearchQuery] = useState("");
 
   const { data: user } = useCurrentUser();
   const { 
@@ -37,6 +56,7 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
   } = useUserPhoneNumbers();
   
   const { data: contact } = useContact(contactId || "");
+  const { data: contacts } = useContacts({ search: contactSearchQuery || undefined });
   
   const createCallMutation = useCreateOutboundCall();
   
@@ -48,6 +68,13 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
     (pn) => pn.status === "active"
   );
 
+  // Helper function to get phone number type
+  const getPhoneNumberType = (phoneNumber: typeof activePhoneNumbers[0]) => {
+    const sid = phoneNumber.twilioSid || "";
+    const isDial = sid && !sid.startsWith("non-twilio-");
+    return isDial ? "Dial" : "Caller ID";
+  };
+
   useEffect(() => {
     if (activePhoneNumbers.length > 0 && !selectedPhoneNumberId && !isLoadingPhoneNumbers) {
       // Use setTimeout to make setState asynchronous and avoid cascading renders
@@ -57,19 +84,23 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
     }
   }, [activePhoneNumbers, selectedPhoneNumberId, isLoadingPhoneNumbers]);
 
-  // Pre-populate phone number and name from contact data
+  // Pre-populate phone number and name from contact data or phoneNumber prop
   useEffect(() => {
     if (contact?.phone_number) {
       // Format the phone number for display
       const formatted = formatPhoneNumber(contact.phone_number);
       // Only update if the value actually changed to avoid unnecessary re-renders
       setDestinationNumber((prev) => prev !== formatted ? formatted : prev);
-    } else if (!contactId && destinationNumber) {
-      // Clear destination number if no contactId and contact data is cleared
+    } else if (phoneNumber) {
+      // Pre-populate from phoneNumber query parameter
+      const formatted = formatPhoneNumber(phoneNumber);
+      setDestinationNumber((prev) => prev !== formatted ? formatted : prev);
+    } else if (!contactId && !phoneNumber && destinationNumber) {
+      // Clear destination number if no contactId and no phoneNumber and contact data is cleared
       setDestinationNumber("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contact?.phone_number, contactId]);
+  }, [contact?.phone_number, contactId, phoneNumber]);
 
   // Get contact name for display
   const contactName = contact?.name;
@@ -109,12 +140,18 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
         onSuccess: (result) => {
           console.log("🟠 OutboundCallDialer: API call successful! Result:", result);
           
+          // Find contact name from selected contact or search results
+          const selectedContact = contacts?.find(
+            (c) => normalizeToE164(c.phone_number) === normalizedPhone
+          );
+          const displayName = contactName || selectedContact?.name || normalizedPhone;
+          
           // Join the browser user to the room
           const callData = { 
             roomName: result.room, 
             identity: `user-${user.id}`,
             callerNumber: normalizedPhone,
-            callerName: contactName || normalizedPhone,
+            callerName: displayName,
           };
           
           console.log("🟠 OutboundCallDialer: Calling onCallStart with:", callData);
@@ -143,25 +180,55 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
             disabled={isLoadingPhoneNumbers || isConnecting}
           >
             <SelectTrigger id="from-phone-number" className="w-full py-2.5 px-4">
-              <SelectValue placeholder="Select phone number" />
+              <SelectValue placeholder="Select phone number">
+                {selectedPhoneNumberId ? (() => {
+                  const selected = activePhoneNumbers.find((pn) => pn.id === selectedPhoneNumberId);
+                  if (!selected) return "Select phone number";
+                  const type = getPhoneNumberType(selected);
+                  return `${selected.friendlyName || selected.phoneNumber} (${type})`;
+                })() : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {activePhoneNumbers.map((pn) => (
-                <SelectItem key={pn.id} value={pn.id}>
-                  {pn.friendlyName ? (
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {pn.friendlyName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {pn.phoneNumber}
-                      </span>
+              {activePhoneNumbers.map((pn) => {
+                const type = getPhoneNumberType(pn);
+                return (
+                  <SelectItem key={pn.id} value={pn.id}>
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        {pn.friendlyName ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">
+                                {pn.friendlyName}
+                              </span>
+                              <Badge 
+                                variant={type === "Dial" ? "default" : "secondary"}
+                                className="text-xs shrink-0"
+                              >
+                                {type}
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {pn.phoneNumber}
+                            </span>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{pn.phoneNumber}</span>
+                            <Badge 
+                              variant={type === "Dial" ? "default" : "secondary"}
+                              className="text-xs shrink-0"
+                            >
+                              {type}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <span>{pn.phoneNumber}</span>
-                  )}
-                </SelectItem>
-              ))}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -191,20 +258,65 @@ export function OutboundCallDialer({ onCallStart, contactId, activeCall }: Outbo
         </Label>
         <div className="flex gap-2">
           <div className="flex-1 space-y-1">
-            <Input
-              id="destination-number"
-              type="tel"
-              placeholder="+1 (555) 123-4567 or (555) 123-4567"
-              value={destinationNumber}
-              onChange={(e) => setDestinationNumber(formatPhoneNumber(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && destinationNumber.trim() && selectedPhoneNumberId) {
-                  handleDial();
-                }
-              }}
-              className="w-full"
-              disabled={!selectedPhoneNumberId || isConnecting}
-            />
+            <div className="flex gap-2">
+              <Popover open={contactSearchOpen} onOpenChange={setContactSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={!selectedPhoneNumberId || isConnecting}
+                    type="button"
+                  >
+                    <User className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search contacts..." 
+                      value={contactSearchQuery}
+                      onValueChange={setContactSearchQuery}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No contacts found.</CommandEmpty>
+                      <CommandGroup>
+                        {contacts?.map((contact) => (
+                          <CommandItem
+                            key={contact.id}
+                            value={`${contact.name} ${contact.phone_number}`}
+                            onSelect={() => {
+                              setDestinationNumber(formatPhoneNumber(contact.phone_number));
+                              setContactSearchOpen(false);
+                              setContactSearchQuery("");
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{contact.name}</span>
+                              <span className="text-xs text-muted-foreground">{contact.phone_number}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <Input
+                id="destination-number"
+                type="tel"
+                placeholder="+1 (555) 123-4567 or search contacts"
+                value={destinationNumber}
+                onChange={(e) => setDestinationNumber(formatPhoneNumber(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && destinationNumber.trim() && selectedPhoneNumberId) {
+                    handleDial();
+                  }
+                }}
+                className="flex-1"
+                disabled={!selectedPhoneNumberId || isConnecting}
+              />
+            </div>
             {destinationNumber.trim() && (
               <p className="text-xs text-muted-foreground">
                 Will call: {normalizeToE164(destinationNumber.trim()) || "Enter a valid number"}

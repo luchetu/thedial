@@ -6,6 +6,7 @@ import { createColumnHelper } from "@/components/ui/data-table";
 import { countryCodes } from "@/lib/constants/countryCodes";
 import { formatDate } from "@/lib/utils/date";
 import type { PlanRoutingProfile, RoutingProfile } from "@/features/admin/telephony/types";
+import { Edit, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<PlanRoutingProfile>();
 const countryLookup = new Map(countryCodes.map((country) => [country.code, country]));
@@ -93,22 +94,33 @@ export function getPlanRoutingProfileColumns({
     }),
     columnHelper.display({
       id: "actions",
+      enableColumnFilter: false, // Disable filtering for actions column
       header: () => <div className="text-right">Actions</div>,
       cell: (info) => {
         const mapping = info.row.original;
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit?.(mapping)}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-700"
-            >
-              Edit
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => onDelete?.(mapping)}>
-              Delete
-            </Button>
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(mapping)}
+                title="Edit plan routing profile"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(mapping)}
+                className="text-destructive hover:text-destructive"
+                title="Delete plan routing profile"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

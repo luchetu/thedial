@@ -9,12 +9,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
+    // Only redirect if we're done loading and there's an error or no user
     if (!isLoading && (error || !user)) {
       router.push("/auth/login")
     }
-  }, [user, isLoading, error, router])
+  }, [isLoading, error, user, router])
 
-  // Show nothing while loading
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -23,7 +24,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Don't render children if not authenticated
+  // Show nothing if not authenticated (redirect is in progress)
   if (error || !user) {
     return null
   }

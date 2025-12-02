@@ -195,7 +195,7 @@ export function RecordingsList() {
                             {recording.phoneNumber} • {recording.timestamp}
                           </SheetDescription>
                         </SheetHeader>
-                        <div className="mt-6 space-y-4">
+                        <div className="mt-6 space-y-4 px-4">
                           <div>
                             <h4 className="font-medium mb-2">AI Tags:</h4>
                             <div className="flex flex-wrap gap-2">
