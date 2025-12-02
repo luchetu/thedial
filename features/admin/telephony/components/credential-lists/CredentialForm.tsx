@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, FormField } from "@/lib/forms";
+import { useForm, FormField, Form } from "@/lib/forms";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -30,24 +30,31 @@ export function CredentialForm({
       username: "",
       password: "",
     },
-    onSubmit: async ({ value }) => {
-      await onSubmit(value as CredentialFormValues);
+    onSubmit: async (values) => {
+      // Use form.state.values as fallback if values is undefined
+      const formValues = values || form.state.values;
+      if (!formValues || typeof formValues !== 'object') {
+        console.error("Form submission failed: form values are invalid", { values, formState: form.state.values });
+        return;
+      }
+      await onSubmit(formValues as CredentialFormValues);
     },
   });
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-      className="space-y-4"
-    >
+    <Form<CredentialFormValues> onSubmit={() => form.handleSubmit()}>
+      <div className="space-y-4">
       <form.Field
         name="username"
         validators={{
           onChange: ({ value }) => {
+            const stringValue = String(value || "");
+            if (!isEditMode && (!stringValue || stringValue.trim() === "")) {
+              return "Username is required";
+            }
+            return undefined;
+          },
+          onBlur: ({ value }) => {
             const stringValue = String(value || "");
             if (!isEditMode && (!stringValue || stringValue.trim() === "")) {
               return "Username is required";
@@ -73,6 +80,24 @@ export function CredentialForm({
         name="password"
         validators={{
           onChange: ({ value }) => {
+            const stringValue = String(value || "");
+            if (!stringValue || stringValue.trim() === "") {
+              return "Password is required";
+            }
+            if (stringValue.length < 12) {
+              return "Password must be at least 12 characters";
+            }
+            // Check for at least 1 digit
+            if (!/\d/.test(stringValue)) {
+              return "Password must contain at least 1 digit";
+            }
+            // Check for mixed case
+            if (!/[a-z]/.test(stringValue) || !/[A-Z]/.test(stringValue)) {
+              return "Password must contain both uppercase and lowercase letters";
+            }
+            return undefined;
+          },
+          onBlur: ({ value }) => {
             const stringValue = String(value || "");
             if (!stringValue || stringValue.trim() === "") {
               return "Password is required";
@@ -123,12 +148,13 @@ export function CredentialForm({
         </p>
       )}
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="submit" variant="secondary" disabled={isLoading}>
-          {submitLabel}
-        </Button>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="submit" variant="secondary" disabled={isLoading}>
+            {submitLabel}
+          </Button>
+        </div>
       </div>
-    </form>
+    </Form>
   );
 }
 

@@ -1,54 +1,83 @@
 "use client";
 
-import { useForm, FormField } from "@/lib/forms";
-import { Button } from "@/components/ui/button";
+import { useForm, FormField, Form, FormSubmitButton } from "@/lib/forms";
+import {
+  useCreateTwilioCredentialList,
+  useUpdateTwilioCredentialList,
+} from "@/features/admin/telephony/hooks/useTwilioCredentialLists";
+import type { TwilioCredentialList } from "@/features/admin/telephony/types";
+import { toastError, toastSuccess } from "@/lib/toast";
 
-interface CredentialListFormValues {
+interface CredentialListFormValues extends Record<string, unknown> {
   friendlyName: string;
 }
 
 interface CredentialListFormProps {
   defaultValues?: CredentialListFormValues;
-  onSubmit: (values: CredentialListFormValues) => Promise<void>;
-  isLoading?: boolean;
+  credentialList?: TwilioCredentialList | null;
+  onSubmit?: () => void;
   submitLabel?: string;
 }
 
 export function CredentialListForm({
   defaultValues,
+  credentialList,
   onSubmit,
-  isLoading = false,
   submitLabel = "Submit",
 }: CredentialListFormProps) {
+  const createMutation = useCreateTwilioCredentialList();
+  const updateMutation = useUpdateTwilioCredentialList();
+
+  const isEditMode = Boolean(credentialList);
+  const isLoading = createMutation.isPending || updateMutation.isPending;
+
   const form = useForm<CredentialListFormValues>({
     defaultValues: defaultValues || {
       friendlyName: "",
     },
-    onSubmit: async ({ value }) => {
-      await onSubmit(value);
+    onSubmit: async (values) => {
+      try {
+        if (isEditMode && credentialList) {
+          await updateMutation.mutateAsync({
+            sid: credentialList.sid,
+            data: { friendlyName: values.friendlyName },
+          });
+          toastSuccess("Credential list updated successfully");
+        } else {
+          await createMutation.mutateAsync({
+            friendlyName: values.friendlyName,
+          });
+          toastSuccess("Credential list created successfully");
+        }
+        onSubmit?.();
+      } catch (error) {
+        const err = error as Error;
+        toastError(err.message || "Failed to save credential list");
+        throw err;
+      }
     },
   });
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-      className="space-y-4"
-    >
-      <form.Field
-        name="friendlyName"
-        validators={{
-          onChange: ({ value }) => {
-            if (!value || value.trim() === "") {
-              return "Friendly name is required";
-            }
-            return undefined;
-          },
-        }}
-      >
+    <Form<CredentialListFormValues> onSubmit={() => form.handleSubmit()}>
+      <div className="space-y-4">
+        <form.Field
+          name="friendlyName"
+          validators={{
+            onChange: ({ value }) => {
+              if (!value || String(value).trim() === "") {
+                return "Friendly name is required";
+              }
+              return undefined;
+            },
+            onBlur: ({ value }) => {
+              if (!value || String(value).trim() === "") {
+                return "Friendly name is required";
+              }
+              return undefined;
+            },
+          }}
+        >
         {(field) => (
           <FormField
             field={field}
@@ -56,18 +85,19 @@ export function CredentialListForm({
             label="Friendly Name"
             placeholder="My Credential List"
             required
-            disabled={isLoading}
+              disabled={isLoading}
             error={!field.state.meta.isValid ? field.state.meta.errors.join(", ") : undefined}
           />
         )}
       </form.Field>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="submit" variant="secondary" disabled={isLoading}>
-          {submitLabel}
-        </Button>
+        <div className="flex justify-end gap-2 pt-4">
+          <FormSubmitButton loading={isLoading} variant="secondary">
+            {submitLabel}
+          </FormSubmitButton>
+        </div>
       </div>
-    </form>
+    </Form>
   );
 }
 

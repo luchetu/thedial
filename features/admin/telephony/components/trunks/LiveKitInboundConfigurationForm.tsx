@@ -47,28 +47,6 @@ export function LiveKitInboundConfigurationForm({
   const [allowedNumberInput, setAllowedNumberInput] = useState("");
   
   const restrictAllowedNumbers = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.restrictAllowedNumbers);
-  const inboundNumbers = useStore(form.store, (state: { values: TrunkFormValues }) => {
-    const nums = state.values.inboundNumbers;
-    return Array.isArray(nums) ? nums : [];
-  });
-
-  const handleAddInboundNumber = () => {
-    const formatted = formatPhoneNumber(inboundNumberInput);
-    if (formatted && e164Pattern.test(formatted)) {
-      const currentNumbers = form.getFieldValue("inboundNumbers");
-      const numsArray = Array.isArray(currentNumbers) ? currentNumbers : [];
-      if (!numsArray.includes(formatted)) {
-        form.setFieldValue("inboundNumbers", [...numsArray, formatted]);
-        setInboundNumberInput("");
-      }
-    }
-  };
-
-  const handleRemoveInboundNumber = (numberToRemove: string) => {
-    const currentNumbers = form.getFieldValue("inboundNumbers");
-    const numsArray = Array.isArray(currentNumbers) ? currentNumbers : [];
-    form.setFieldValue("inboundNumbers", numsArray.filter((n: string) => n !== numberToRemove));
-  };
 
   return (
     <div className="space-y-4">
@@ -81,62 +59,100 @@ export function LiveKitInboundConfigurationForm({
         </div>
       )}
 
-      <form.Field name="inboundNumbers">
-        {() => (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Phone Numbers
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                type="tel"
-                value={inboundNumberInput}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  setInboundNumberInput(formatted);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddInboundNumber();
-                  }
-                }}
-                placeholder="+14155551234"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                onClick={handleAddInboundNumber}
-                className="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-                disabled={!inboundNumberInput || !e164Pattern.test(formatPhoneNumber(inboundNumberInput))}
-              >
-                Add
-              </button>
-            </div>
-            {inboundNumbers.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {inboundNumbers.map((number) => (
-                  <div
-                    key={number}
-                    className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md text-sm"
-                  >
-                    <span className="font-mono">{number}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveInboundNumber(number)}
-                      className="text-destructive hover:text-destructive/80"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+      <form.Field 
+        name="inboundNumbers"
+        mode="array"
+        defaultValue={[]}
+      >
+        {(field) => {
+          const numbers = Array.isArray(field.state.value) ? field.state.value : [];
+          
+          const handleAddNumber = () => {
+            const formatted = formatPhoneNumber(inboundNumberInput);
+            console.log("[LiveKitInboundConfigurationForm] handleAddNumber called:", {
+              inboundNumberInput,
+              formatted,
+              isValid: formatted && e164Pattern.test(formatted),
+              currentNumbers: numbers,
+            });
+            
+            if (formatted && e164Pattern.test(formatted)) {
+              // Check if number already exists
+              if (!numbers.includes(formatted)) {
+                // Use TanStack Form's pushValue method for arrays
+                // Type assertion needed because TanStack Form infers array element type from defaultValue
+                (field.pushValue as (value: string) => void)(formatted);
+                console.log("[LiveKitInboundConfigurationForm] Added number, new array:", [...numbers, formatted]);
+                setInboundNumberInput("");
+              } else {
+                console.log("[LiveKitInboundConfigurationForm] Number already exists:", formatted);
+              }
+            }
+          };
+          
+          const handleRemoveNumber = (index: number) => {
+            console.log("[LiveKitInboundConfigurationForm] Removing number at index:", index, "value:", numbers[index]);
+            // Use TanStack Form's removeValue method for arrays
+            field.removeValue(index);
+            console.log("[LiveKitInboundConfigurationForm] Removed number, new array:", numbers.filter((_, i) => i !== index));
+          };
+          
+          return (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Phone Numbers
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  value={inboundNumberInput}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setInboundNumberInput(formatted);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddNumber();
+                    }
+                  }}
+                  placeholder="+14155551234"
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNumber}
+                  className="px-4 py-2 text-sm border rounded-md hover:bg-muted"
+                  disabled={!inboundNumberInput || !e164Pattern.test(formatPhoneNumber(inboundNumberInput))}
+                >
+                  Add
+                </button>
               </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Enter phone numbers in E.164 format (e.g., +14155551234). These are the phone numbers you purchased from your SIP provider (e.g., Twilio) that will receive incoming calls. You can start with an empty list - numbers will be automatically added when users purchase them.
-            </p>
-          </div>
-        )}
+              {numbers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {numbers.map((number, index) => (
+                    <div
+                      key={`${number}-${index}`}
+                      className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md text-sm"
+                    >
+                      <span className="font-mono">{number}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNumber(index)}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Enter phone numbers in E.164 format (e.g., +14155551234). These are the phone numbers you purchased from your SIP provider (e.g., Twilio) that will receive incoming calls. You can start with an empty list - numbers will be automatically added when users purchase them.
+              </p>
+            </div>
+          );
+        }}
       </form.Field>
 
       <div className="space-y-2">

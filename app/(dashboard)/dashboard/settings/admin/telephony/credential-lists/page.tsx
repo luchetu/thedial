@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { CredentialListDialog } from "@/features/admin/telephony/components/credential-lists/CredentialListDialog";
@@ -166,25 +165,25 @@ export default function CredentialListsPage() {
               <>
                 <StatsGrid
                   stats={[
-                    { title: "Total credential lists", value: summary.total },
+                    { 
+                      title: "Total credential lists", 
+                      value: summary.total,
+                      customValue: summary.total === 0 ? (
+                        <span className="text-xs font-semibold text-muted-foreground">None</span>
+                      ) : undefined
+                    },
                   ]}
                   columns={4}
                 />
 
-                {isLoading && credentialLists.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
-                    <WaveLoader className="text-primary" />
-                    <span>Loading credential lists...</span>
-                  </div>
-                ) : (
-                  <DataTable
-                    data={credentialLists}
-                    columns={columns}
-                    columnFilters={columnFilters}
-                    onColumnFiltersChange={setColumnFilters}
-                    emptyMessage={isLoading ? "Loading credential lists..." : "No credential lists found."}
-                  />
-                )}
+                <DataTable
+                  data={credentialLists}
+                  columns={columns}
+                  columnFilters={columnFilters}
+                  onColumnFiltersChange={setColumnFilters}
+                  emptyMessage="No credential lists found."
+                  isLoading={isLoading}
+                />
               </>
             )}
           </div>

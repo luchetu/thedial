@@ -2,15 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Phone, PhoneOff, Mic, PhoneCall, Sparkles } from "lucide-react";
+import { Phone, PhoneOff, Mic, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const callsMenuItems = [
-  {
-    title: "Dial",
-    href: "/dashboard/calls/dial",
-    icon: PhoneCall,
-  },
   {
     title: "All Calls",
     href: "/dashboard/calls",

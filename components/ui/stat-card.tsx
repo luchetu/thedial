@@ -92,13 +92,13 @@ export function StatsGrid({ stats, columns = 3, className, cardClassName, gridTe
             <h3 className="text-[0.65rem] font-medium text-muted-foreground tracking-wide uppercase">
               {stat.title}
             </h3>
-            <div className={cn("text-xs font-semibold", stat.valueColorClassName)}>{stat.value}</div>
+            {stat.customValue ? (
+              <div className="text-xs font-semibold text-muted-foreground">{stat.customValue}</div>
+            ) : (
+              <div className={cn("text-xs font-semibold", stat.valueColorClassName)}>{stat.value}</div>
+            )}
           </div>
-          {stat.customValue ? (
-            <div className="mt-1 text-xs text-muted-foreground">
-              {stat.customValue}
-            </div>
-          ) : stat.description ? (
+          {stat.description && !stat.customValue ? (
             <p className="mt-1 text-[0.65rem] text-muted-foreground">{stat.description}</p>
           ) : null}
         </div>

@@ -12,6 +12,7 @@ import {
   type Table as TanStackTable,
 } from "@tanstack/react-table";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useRef } from "react";
 
 
@@ -22,6 +23,8 @@ interface DataTableProps<TData, TValue = unknown> {
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   onTableInit?: (table: TanStackTable<TData>) => void;
+  isLoading?: boolean;
+  skeletonRows?: number;
 }
 
 export function DataTable<TData, TValue = unknown>({
@@ -31,6 +34,8 @@ export function DataTable<TData, TValue = unknown>({
   columnFilters,
   onColumnFiltersChange,
   onTableInit,
+  isLoading = false,
+  skeletonRows = 5,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -79,7 +84,20 @@ export function DataTable<TData, TValue = unknown>({
               ))}
             </thead>
             <tbody className="bg-white">
-              {table.getRowModel().rows.length > 0 ? (
+              {isLoading ? (
+                Array.from({ length: skeletonRows }).map((_, rowIndex) => (
+                  <tr key={`skeleton-${rowIndex}`} className="border-b">
+                    {columns.map((column, colIndex) => (
+                      <td
+                        key={`skeleton-${rowIndex}-${colIndex}`}
+                        className="px-3 py-2 text-sm"
+                      >
+                        <Skeleton className="h-4 w-full" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="border-b hover:bg-muted/50 bg-white">
                     {row.getVisibleCells().map((cell) => (

@@ -4,6 +4,8 @@ import { useState } from "react";
 import {
   Home,
   Phone,
+  PhoneCall,
+  Smartphone,
   Users,
   LogOut,
   User,
@@ -48,6 +50,11 @@ const mainItems = [
     icon: Home,
   },
   {
+    title: "Dial",
+    url: "/dashboard/dial",
+    icon: PhoneCall,
+  },
+  {
     title: "Calls",
     url: "/dashboard/calls",
     icon: Phone,
@@ -58,9 +65,9 @@ const mainItems = [
     icon: Users,
   },
   {
-    title: "My Phone Numbers",
+    title: "Phone Numbers",
     url: "/dashboard/settings/phone",
-    icon: Phone,
+    icon: Smartphone,
   },
 ];
 
@@ -75,7 +82,7 @@ export function AppSidebar() {
   const handleMakeCall = () => {
     setSelectedAction("call");
     setPopoverOpen(false);
-    router.push("/dashboard/calls/dial");
+    router.push("/dashboard/dial");
   };
 
   const handleBuyNumber = () => {
@@ -150,6 +157,9 @@ export function AppSidebar() {
                 if (item.url === "/dashboard") {
                   isActive = pathname === item.url;
                 } else if (item.url === "/dashboard/settings/phone") {
+                  isActive = pathname === item.url;
+                } else if (item.url === "/dashboard/dial") {
+                  // Dial should be active only on the exact dial page
                   isActive = pathname === item.url;
                 } else {
                   isActive = pathname === item.url || 

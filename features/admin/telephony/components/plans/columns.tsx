@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { createColumnHelper } from "@/components/ui/data-table";
 import type { Plan } from "@/features/admin/telephony/types";
+import { Edit, Eye, Trash2 } from "lucide-react";
 
 const columnHelper = createColumnHelper<Plan>();
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -12,6 +13,7 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 interface PlanColumnActionsProps {
+  onView?: (plan: Plan) => void;
   onEdit?: (plan: Plan) => void;
   onDelete?: (plan: Plan) => void;
 }
@@ -31,7 +33,7 @@ function formatCountries(countries: string[]) {
   return `${countries.slice(0, 3).join(", ")} +${countries.length - 3}`;
 }
 
-export function getPlanColumns({ onEdit, onDelete }: PlanColumnActionsProps = {}) {
+export function getPlanColumns({ onView, onEdit, onDelete }: PlanColumnActionsProps = {}) {
   return [
     columnHelper.accessor("code", {
       header: "Code",
@@ -47,27 +49,6 @@ export function getPlanColumns({ onEdit, onDelete }: PlanColumnActionsProps = {}
         <span className="font-medium">{formatCurrency(info.getValue())}</span>
       ),
     }),
-    columnHelper.group({
-      id: "allowances",
-      header: "Allowances",
-      columns: [
-        columnHelper.accessor("includedRealtimeMinutes", {
-          id: "realtime",
-          header: "Realtime",
-          cell: (info) => formatMinutes("min", info.getValue()),
-        }),
-        columnHelper.accessor("includedTranscriptionMinutes", {
-          id: "transcription",
-          header: "Transcription",
-          cell: (info) => formatMinutes("min", info.getValue()),
-        }),
-        columnHelper.accessor("includedAiMinutes", {
-          id: "ai",
-          header: "AI",
-          cell: (info) => formatMinutes("min", info.getValue()),
-        }),
-      ],
-    }),
     columnHelper.accessor("includedPhoneNumbers", {
       header: "Numbers",
       cell: (info) => info.getValue().toLocaleString(),
@@ -82,26 +63,43 @@ export function getPlanColumns({ onEdit, onDelete }: PlanColumnActionsProps = {}
     }),
     columnHelper.display({
       id: "actions",
+      enableColumnFilter: false, // Disable filtering for actions column
       header: () => <div className="text-right">Actions</div>,
       cell: (info) => {
         const plan = info.row.original;
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit?.(plan)}
-              className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
-            >
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete?.(plan)}
-            >
-              Delete
-            </Button>
+            {onView && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onView(plan)}
+                title="View description"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(plan)}
+                title="Edit plan"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(plan)}
+                className="text-destructive hover:text-destructive"
+                title="Delete plan"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

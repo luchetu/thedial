@@ -139,6 +139,12 @@ export function AddTrunkTwilioForm({
   });
 
   const credentialMode = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.credentialMode);
+  
+  // Reactive check for whether we can proceed to next step
+  const canGoNext = useStore(form.store, (state: { values: TrunkFormValues }) => {
+    const name = state.values.name;
+    return !!name?.toString().trim();
+  });
 
   // Auto-set to "create" mode if no credential lists exist and currently set to "existing"
   useEffect(() => {
@@ -500,7 +506,7 @@ export function AddTrunkTwilioForm({
             totalSteps={2}
             onNext={handleNext}
             onBack={handleBack}
-            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
+            canGoNext={canGoNext}
             canGoBack={currentStep > 0}
             isLoading={isLoading}
             submitButton={

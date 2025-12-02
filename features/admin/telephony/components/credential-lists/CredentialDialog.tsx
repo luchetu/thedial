@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ export const CredentialDialog = ({
   onEditCredential,
   onSuccess,
 }: CredentialDialogProps) => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [manualFormOpen, setManualFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [credentialToDelete, setCredentialToDelete] = useState<{ credential: TwilioCredential; listSid: string } | null>(null);
 
@@ -62,15 +62,15 @@ export const CredentialDialog = ({
 
   const isEditMode = Boolean(editingCredential);
 
-  // Reset form state when dialog closes or editingCredential changes
-  useEffect(() => {
-    if (!open) {
-      setIsFormOpen(false);
-    } else if (editingCredential) {
-      // Auto-open form when editingCredential is set
-      setIsFormOpen(true);
+  // Show form when editing or manually opened
+  const shouldShowForm = open && (Boolean(editingCredential) || manualFormOpen);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) {
+      setManualFormOpen(false);
     }
-  }, [open, editingCredential]);
+    onOpenChange(newOpen);
+  }, [onOpenChange]);
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     if (!credentialList) return;
@@ -94,7 +94,7 @@ export const CredentialDialog = ({
         });
         toastSuccess("Credential created successfully");
       }
-      setIsFormOpen(false);
+      setManualFormOpen(false);
       onSuccess?.();
     } catch (error) {
       const err = error as Error;
@@ -139,12 +139,9 @@ export const CredentialDialog = ({
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  // Show form when editingCredential changes or onCreateCredential is called
-  const shouldShowForm = isFormOpen || isEditMode;
-
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -161,7 +158,7 @@ export const CredentialDialog = ({
                 variant="secondary"
                 onClick={() => {
                   onCreateCredential();
-                  setIsFormOpen(true);
+                  setManualFormOpen(true);
                 }}
                 disabled={!credentialList}
               >
@@ -191,7 +188,7 @@ export const CredentialDialog = ({
                   size="sm"
                   className="mt-2"
                   onClick={() => {
-                    setIsFormOpen(false);
+                    setManualFormOpen(false);
                     // Reset editing state when canceling
                     onSuccess?.();
                   }}

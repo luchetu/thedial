@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStore } from "@tanstack/react-form";
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
 import { TrunkRegistryForm } from "./TrunkRegistryForm";
 import { TrunkStepper, TrunkStepperNavigation } from "./TrunkStepper";
@@ -50,11 +51,29 @@ export function AddTrunkLiveKitOutboundForm({
       outboundNumberMode: defaultValues?.outboundNumberMode || "any",
       outboundNumbers: defaultValues?.outboundNumbers || [],
       address: defaultValues?.address || "",
+      livekitCredentialMode: defaultValues?.livekitCredentialMode || "create",
       authUsername: defaultValues?.authUsername || "",
       authPassword: defaultValues?.authPassword || "",
+      twilioTrunkSid: defaultValues?.twilioTrunkSid,
+      twilioCredentialListSid: defaultValues?.twilioCredentialListSid,
+      twilioCredentialSid: defaultValues?.twilioCredentialSid,
     },
     onSubmit: async (values) => {
       try {
+        // Log form state and validation errors
+        console.log("[AddTrunkLiveKitOutboundForm] Form submission attempt");
+        console.log("[AddTrunkLiveKitOutboundForm] Form values:", values);
+        console.log("[AddTrunkLiveKitOutboundForm] Form canSubmit:", form.state.canSubmit);
+        console.log("[AddTrunkLiveKitOutboundForm] Form fieldMeta:", form.state.fieldMeta);
+        console.log("[AddTrunkLiveKitOutboundForm] Form errorMap:", form.state.errorMap);
+        
+        // Log individual field errors
+        Object.entries(form.state.fieldMeta).forEach(([fieldName, meta]) => {
+          if (meta && 'errors' in meta && Array.isArray(meta.errors) && meta.errors.length > 0) {
+            console.log(`[AddTrunkLiveKitOutboundForm] Field "${fieldName}" has errors:`, meta.errors);
+          }
+        });
+
         const trunkIdToUse = createdTrunkId || trunkId;
 
         if (!trunkIdToUse) {
@@ -82,12 +101,21 @@ export function AddTrunkLiveKitOutboundForm({
         }
 
         // Create mode: Configure trunk (registry was already created in handleNext)
+        // If Twilio credential is selected, don't send username/password (backend will fetch from Twilio/local DB)
         const configRequest: ConfigureTrunkRequest = {
           address: values.address.trim(),
           numbers: values.outboundNumberMode === "any" ? ["*"] : values.outboundNumbers,
-          authUsername: values.authUsername.trim(),
-          authPassword: values.authPassword.trim(),
+          // Only send username/password if "create" mode is selected (manual entry mode)
+          // When "existing" mode is selected, backend fetches username from Twilio and password from local DB
+          authUsername: values.livekitCredentialMode === "existing" ? undefined : (values.authUsername?.trim() || undefined),
+          authPassword: values.livekitCredentialMode === "existing" ? undefined : (values.authPassword?.trim() || undefined),
+          // Include Twilio credential references if "existing" mode is selected
+          twilioTrunkSid: values.livekitCredentialMode === "existing" ? (values.twilioTrunkSid || undefined) : undefined,
+          twilioCredentialListSid: values.livekitCredentialMode === "existing" ? (values.twilioCredentialListSid || undefined) : undefined,
+          twilioCredentialSid: values.livekitCredentialMode === "existing" ? (values.twilioCredentialSid || undefined) : undefined,
         };
+
+        console.log("[AddTrunkLiveKitOutboundForm] Config request:", configRequest);
 
         await configureMutation.mutateAsync({
           id: trunkIdToUse,
@@ -97,10 +125,17 @@ export function AddTrunkLiveKitOutboundForm({
         onSubmit?.();
       } catch (error) {
         const err = error as Error;
+        console.error("[AddTrunkLiveKitOutboundForm] Submission error:", err);
         toastError(`Failed to ${isEditMode ? "update" : "configure"} trunk: ${err.message}`);
         throw error;
       }
     },
+  });
+
+  // Reactive check for whether we can proceed to next step
+  const canGoNext = useStore(form.store, (state: { values: TrunkFormValues }) => {
+    const name = state.values.name;
+    return !!name?.toString().trim();
   });
 
   const handleNext = async () => {
@@ -171,7 +206,13 @@ export function AddTrunkLiveKitOutboundForm({
             )}
 
             {currentStep === 1 && (
-              <LiveKitOutboundConfigurationForm form={form} isLoading={isLoading} showTitle={true} />
+              <LiveKitOutboundConfigurationForm 
+                form={form} 
+                isLoading={isLoading} 
+                showTitle={true}
+                trunkId={createdTrunkId || trunkId || undefined}
+                isEditMode={isEditMode}
+              />
             )}
           </>
         )}
@@ -183,7 +224,7 @@ export function AddTrunkLiveKitOutboundForm({
             totalSteps={2}
             onNext={handleNext}
             onBack={handleBack}
-            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
+            canGoNext={canGoNext}
             canGoBack={currentStep > 0}
             isLoading={isLoading}
             submitButton={

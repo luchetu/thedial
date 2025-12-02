@@ -210,6 +210,10 @@ export type ConfigureTrunkRequest = {
   numbers?: string[]; // Phone numbers array
   authUsername?: string; // SIP username
   authPassword?: string; // SIP password
+  // Twilio credential references (for LiveKit outbound trunks using Twilio credentials)
+  twilioTrunkSid?: string; // Twilio trunk SID (optional)
+  twilioCredentialListSid?: string; // Credential list SID from selected Twilio trunk (optional)
+  twilioCredentialSid?: string; // Selected credential SID (optional)
 
   // LiveKit Inbound fields
   inboundNumbers?: string[]; // Phone numbers ([] for any)
@@ -264,6 +268,7 @@ export type TwilioCredentialList = {
 export type TwilioCredential = {
   sid: string;
   username: string;
+  password?: string; // Only included when fetching for LiveKit trunk configuration
 };
 
 export type CreateTwilioCredentialListRequest = {

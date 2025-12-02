@@ -71,7 +71,7 @@ export function TrunkStepperNavigation({
         {!isFirstStep && canGoBack && onBack && (
           <Button
             type="button"
-            variant="secondary-outline"
+            variant="outline"
             onClick={onBack}
             disabled={isLoading}
           >

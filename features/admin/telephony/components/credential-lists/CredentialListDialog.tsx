@@ -8,12 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CredentialListForm } from "./CredentialListForm";
-import {
-  useCreateTwilioCredentialList,
-  useUpdateTwilioCredentialList,
-} from "@/features/admin/telephony/hooks/useTwilioCredentialLists";
 import type { TwilioCredentialList } from "@/features/admin/telephony/types";
-import { toastError, toastSuccess } from "@/lib/toast";
 
 interface CredentialListDialogProps {
   open: boolean;
@@ -28,35 +23,12 @@ export const CredentialListDialog = ({
   credentialList,
   onSuccess,
 }: CredentialListDialogProps) => {
-  const createMutation = useCreateTwilioCredentialList();
-  const updateMutation = useUpdateTwilioCredentialList();
-
   const isEditMode = Boolean(credentialList);
 
-  const handleSubmit = async (values: { friendlyName: string }) => {
-    try {
-      if (isEditMode && credentialList) {
-        await updateMutation.mutateAsync({
-          sid: credentialList.sid,
-          data: { friendlyName: values.friendlyName },
-        });
-        toastSuccess("Credential list updated successfully");
-      } else {
-        await createMutation.mutateAsync({
-          friendlyName: values.friendlyName,
-        });
-        toastSuccess("Credential list created successfully");
-      }
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (error) {
-      const err = error as Error;
-      toastError(err.message || "Failed to save credential list");
-      throw err;
-    }
+  const handleSuccess = () => {
+    onOpenChange(false);
+    onSuccess?.();
   };
-
-  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,16 +49,17 @@ export const CredentialListDialog = ({
           defaultValues={
             credentialList
               ? {
-                  friendlyName: credentialList.friendlyName,
+                  friendlyName: credentialList.friendlyName || "",
                 }
               : undefined
           }
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
+          credentialList={credentialList}
+          onSubmit={handleSuccess}
           submitLabel={isEditMode ? "Save Changes" : "Create List"}
         />
       </DialogContent>
     </Dialog>
   );
 };
+
 

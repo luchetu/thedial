@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
-import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { countryCodes } from "@/lib/constants/countryCodes";
@@ -21,8 +20,7 @@ import {
   useDeleteRoutingProfile,
 } from "@/features/admin/telephony/hooks/useRoutingProfiles";
 import { usePlans } from "@/features/admin/telephony/hooks/usePlans";
-import { useOutboundTrunks } from "@/features/admin/telephony/hooks/useOutboundTrunks";
-import { useInboundTrunks } from "@/features/admin/telephony/hooks/useInboundTrunks";
+import { useTrunks } from "@/features/admin/telephony/hooks/useTrunks";
 import { useDispatchRules } from "@/features/admin/telephony/hooks/useDispatchRules";
 import type { RoutingProfile } from "@/features/admin/telephony/types";
 
@@ -48,9 +46,41 @@ export default function RoutingProfilesPage() {
   const deleteRoutingProfile = useDeleteRoutingProfile();
 
   const { data: plansData = [] } = usePlans();
-  const { data: outboundTrunksData = [] } = useOutboundTrunks();
-  const { data: inboundTrunksData = [] } = useInboundTrunks();
+  
+  // Fetch trunks using unified API
+  const { data: outboundTrunksData = [] } = useTrunks({
+    provider: "livekit",
+    type: "livekit_outbound",
+  });
+  const { data: inboundTrunksData = [] } = useTrunks({
+    provider: "livekit",
+    type: "livekit_inbound",
+  });
+  
   const { data: dispatchRulesData = [] } = useDispatchRules();
+  
+  // Convert unified trunks to the format expected by RoutingProfileDialog
+  // The dialog expects OutboundTrunk[] and InboundTrunk[] format
+  const outboundTrunksForDialog = useMemo(() => {
+    return outboundTrunksData.map((trunk) => ({
+      id: trunk.id, // Internal UUID
+      name: trunk.name,
+      trunkId: trunk.externalId || trunk.id, // LiveKit trunk ID (externalId) or fallback to UUID
+      numbers: [],
+      twilioTrunkId: "",
+      twilioSipAddress: "",
+      twilioSipUsername: "",
+    }));
+  }, [outboundTrunksData]);
+  
+  const inboundTrunksForDialog = useMemo(() => {
+    return inboundTrunksData.map((trunk) => ({
+      id: trunk.id, // Internal UUID
+      name: trunk.name,
+      trunkId: trunk.externalId || trunk.id, // LiveKit trunk ID (externalId) or fallback to UUID
+      numbers: [],
+    }));
+  }, [inboundTrunksData]);
 
   const handleCreate = useCallback(() => {
     setEditingProfile(null);
@@ -173,7 +203,7 @@ export default function RoutingProfilesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={resetFilters}>
+                  <Button variant="primary-outline" size="sm" onClick={resetFilters}>
                     <X className="size-4" />
                     Clear filters
                   </Button>
@@ -203,19 +233,13 @@ export default function RoutingProfilesPage() {
                   <h3 className="text-lg font-medium">Routing profiles</h3>
                 </div>
 
-                {isLoading && routingProfiles.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
-                    <WaveLoader className="text-primary" />
-                    <span>Loading routing profiles…</span>
-                  </div>
-                ) : (
-                  <DataTable
-                    data={routingProfiles}
-                    // @ts-expect-error - TanStack Table column type inference limitation
-                    columns={columns}
-                    emptyMessage={isLoading ? "Loading routing profiles…" : "No routing profiles found."}
-                  />
-                )}
+                <DataTable
+                  data={routingProfiles}
+                  // @ts-expect-error - TanStack Table column type inference limitation
+                  columns={columns}
+                  emptyMessage="No routing profiles found."
+                  isLoading={isLoading}
+                />
               </div>
             </div>
           </div>
@@ -232,8 +256,8 @@ export default function RoutingProfilesPage() {
         }}
         profile={editingProfile}
         plans={plansData}
-        outboundTrunks={outboundTrunksData}
-        inboundTrunks={inboundTrunksData}
+        outboundTrunks={outboundTrunksForDialog}
+        inboundTrunks={inboundTrunksForDialog}
         dispatchRules={dispatchRulesData}
       />
     </div>

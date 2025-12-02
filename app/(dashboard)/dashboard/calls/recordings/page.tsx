@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -25,8 +24,15 @@ export default function RecordingsPage() {
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <h1 className="text-lg font-semibold">Recordings</h1>
-          <div className="flex-1" />
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight">Recordings</h1>
+              <span className="text-muted-foreground">|</span>
+              <p className="text-sm text-muted-foreground">
+                Listen to and manage your call recordings
+              </p>
+            </div>
+          </div>
         </header>
         
         {/* Content */}

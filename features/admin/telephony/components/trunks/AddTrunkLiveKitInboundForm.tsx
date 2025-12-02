@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStore } from "@tanstack/react-form";
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
 import { TrunkRegistryForm } from "./TrunkRegistryForm";
 import { TrunkStepper, TrunkStepperNavigation } from "./TrunkStepper";
@@ -58,9 +59,14 @@ export function AddTrunkLiveKitInboundForm({
     },
     onSubmit: async (values) => {
       try {
+        console.log("[AddTrunkLiveKitInboundForm] onSubmit called");
+        console.log("[AddTrunkLiveKitInboundForm] values parameter:", values);
+        console.log("[AddTrunkLiveKitInboundForm] form.state.values:", form.state.values);
+        
         const trunkIdToUse = createdTrunkId || trunkId;
 
         if (!trunkIdToUse) {
+          console.error("[AddTrunkLiveKitInboundForm] ERROR: Trunk ID is missing");
           toastError("Trunk ID is missing. Please try again.");
           return;
         }
@@ -85,42 +91,91 @@ export function AddTrunkLiveKitInboundForm({
         }
 
         // Create mode: Configure trunk (registry was already created in handleNext)
-        const inboundNumbers = values.inboundNumberMode === "any" ? [] : values.inboundNumbers;
-        const allowedAddresses = values.allowedAddresses || [];
-        const authUsername = values.inboundAuthUsername.trim();
-        const authPassword = values.inboundAuthPassword.trim();
+        // Always use form.state.values to get the latest form state (values parameter may be stale)
+        const formValues = form.state.values;
         
-        // Validate: When accepting any number, must have either auth credentials OR allowed addresses
+        // Get inbound numbers from form state
+        const inboundNumbers = Array.isArray(formValues.inboundNumbers) ? formValues.inboundNumbers : [];
+        const allowedAddresses = Array.isArray(formValues.allowedAddresses) ? formValues.allowedAddresses : [];
+        const authUsername = (formValues.inboundAuthUsername || "").trim();
+        const authPassword = (formValues.inboundAuthPassword || "").trim();
+        
+        console.log("[AddTrunkLiveKitInboundForm] Configuration submission - DETAILED LOG:", {
+          "values.inboundNumbers": values?.inboundNumbers,
+          "form.state.values.inboundNumbers": form.state.values.inboundNumbers,
+          "formValues.inboundNumbers": formValues.inboundNumbers,
+          "finalInboundNumbers": inboundNumbers,
+          "inboundNumbersLength": inboundNumbers.length,
+          "inboundNumbersType": typeof inboundNumbers,
+          "isArray": Array.isArray(inboundNumbers),
+          "allowedAddresses": allowedAddresses,
+          "allowedAddressesLength": allowedAddresses.length,
+          "authUsername": authUsername ? "***" : "(empty)",
+          "authPassword": authPassword ? "***" : "(empty)",
+          "hasAuth": authUsername !== "" && authPassword !== "",
+          "hasAllowedAddresses": allowedAddresses.length > 0,
+          "allFormValuesKeys": Object.keys(formValues),
+        });
+        
+        // Validate: When accepting any number (no specific numbers), must have either auth credentials OR allowed addresses
+        // When phone numbers are provided, auth is optional (phone numbers provide security)
         if (inboundNumbers.length === 0) {
+          console.log("[AddTrunkLiveKitInboundForm] VALIDATION: No phone numbers provided, checking auth/addresses");
           const hasAuth = authUsername !== "" && authPassword !== "";
           const hasAllowedAddresses = allowedAddresses.length > 0;
+          console.log("[AddTrunkLiveKitInboundForm] VALIDATION CHECK:", {
+            hasAuth,
+            hasAllowedAddresses,
+            willFail: !hasAuth && !hasAllowedAddresses,
+          });
+          
           if (!hasAuth && !hasAllowedAddresses) {
+            console.error("[AddTrunkLiveKitInboundForm] VALIDATION ERROR: No phone numbers, no auth, no allowed addresses");
             toastError("When accepting calls to any number, you must provide either username and password for authentication or allowed IP addresses");
             return;
           }
+        } else {
+          console.log("[AddTrunkLiveKitInboundForm] VALIDATION: Phone numbers provided, auth is optional");
         }
 
         const configRequest: ConfigureTrunkRequest = {
           inboundNumbers: inboundNumbers,
-          allowedNumbers: values.restrictAllowedNumbers ? values.allowedNumbers : [],
+          allowedNumbers: formValues.restrictAllowedNumbers ? (Array.isArray(formValues.allowedNumbers) ? formValues.allowedNumbers : []) : [],
           allowedAddresses: allowedAddresses,
-          inboundAuthUsername: authUsername || undefined,
-          inboundAuthPassword: authPassword || undefined,
-          krispEnabled: values.krispEnabled,
+          // Only include auth credentials if both are provided
+          inboundAuthUsername: (authUsername && authPassword) ? authUsername : undefined,
+          inboundAuthPassword: (authUsername && authPassword) ? authPassword : undefined,
+          krispEnabled: Boolean(formValues.krispEnabled),
         };
+
+        console.log("[AddTrunkLiveKitInboundForm] Config request to backend:", {
+          ...configRequest,
+          inboundAuthUsername: configRequest.inboundAuthUsername ? "***" : undefined,
+          inboundAuthPassword: configRequest.inboundAuthPassword ? "***" : undefined,
+        });
+        console.log("[AddTrunkLiveKitInboundForm] Backend requirements: All fields are optional (no validation on backend)");
 
         await configureMutation.mutateAsync({
           id: trunkIdToUse,
           data: configRequest,
         });
+        console.log("[AddTrunkLiveKitInboundForm] Configuration successful");
         toastSuccess("Trunk configured successfully");
         onSubmit?.();
       } catch (error) {
         const err = error as Error;
+        console.error("[AddTrunkLiveKitInboundForm] ERROR during submission:", err);
+        console.error("[AddTrunkLiveKitInboundForm] Error stack:", err.stack);
         toastError(`Failed to ${isEditMode ? "update" : "configure"} trunk: ${err.message}`);
         throw error;
       }
     },
+  });
+
+  // Reactive check for whether we can proceed to next step
+  const canGoNext = useStore(form.store, (state: { values: TrunkFormValues }) => {
+    const name = state.values.name;
+    return !!name?.toString().trim();
   });
 
   const handleNext = async () => {
@@ -203,7 +258,7 @@ export function AddTrunkLiveKitInboundForm({
             totalSteps={2}
             onNext={handleNext}
             onBack={handleBack}
-            canGoNext={!!form.getFieldValue("name")?.toString().trim()}
+            canGoNext={canGoNext}
             canGoBack={currentStep > 0}
             isLoading={isLoading}
             submitButton={

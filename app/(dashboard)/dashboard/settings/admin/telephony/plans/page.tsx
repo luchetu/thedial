@@ -7,12 +7,21 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getPlanColumns } from "@/features/admin/telephony/components/plans/columns";
 import { PlanDialog } from "@/features/admin/telephony/components/plans/PlanDialog";
-import { usePlans } from "@/features/admin/telephony/hooks/usePlans";
+import { PlanDescriptionDialog } from "@/features/admin/telephony/components/plans/PlanDescriptionDialog";
+import { usePlans, useDeletePlan } from "@/features/admin/telephony/hooks/usePlans";
 import type { Plan } from "@/features/admin/telephony/types";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -23,12 +32,18 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 export default function AdminPlansPage() {
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+  const [descriptionPlan, setDescriptionPlan] = useState<Plan | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
 
   const {
     data: plansData,
     isLoading,
     error,
   } = usePlans();
+
+  const deletePlan = useDeletePlan();
 
   const plans = useMemo(() => plansData ?? [], [plansData]);
 
@@ -63,33 +78,46 @@ export default function AdminPlansPage() {
     setIsPlanDialogOpen(true);
   }, []);
 
-  const handleDeletePlan = useCallback((plan: Plan) => {
-    // TODO: Wire to delete confirmation + mutation
-    console.debug("Delete plan", plan.id);
+  const handleViewPlan = useCallback((plan: Plan) => {
+    setDescriptionPlan(plan);
+    setIsDescriptionOpen(true);
   }, []);
+
+  const handleDeletePlan = useCallback((plan: Plan) => {
+    setPlanToDelete(plan);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!planToDelete?.id) return;
+    deletePlan.mutate(planToDelete.id, {
+      onSuccess: () => {
+        toastSuccess("Plan deleted");
+        setDeleteDialogOpen(false);
+        setPlanToDelete(null);
+      },
+      onError: (mutationError) => {
+        toastError(
+          `Failed to delete plan: ${mutationError?.message || "Unknown error"}`
+        );
+      },
+    });
+  }, [planToDelete, deletePlan]);
 
   const planColumns = useMemo(
     () =>
       getPlanColumns({
+        onView: handleViewPlan,
         onEdit: handleEditPlan,
         onDelete: handleDeletePlan,
       }),
-    [handleEditPlan, handleDeletePlan]
+    [handleViewPlan, handleEditPlan, handleDeletePlan]
   );
 
   if (error) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-sm text-destructive">
         {error.message || "Failed to load plans."}
-      </div>
-    );
-  }
-
-  if (isLoading && plans.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-        <WaveLoader className="text-primary" />
-        <span>Loading plans...</span>
       </div>
     );
   }
@@ -141,7 +169,8 @@ export default function AdminPlansPage() {
                 data={plans}
                 // @ts-expect-error - TanStack Table column type inference limitation
                 columns={planColumns}
-                emptyMessage={isLoading ? "Loading plans..." : "No plans found."}
+                emptyMessage="No plans found."
+                isLoading={isLoading}
               />
             </div>
           </div>
@@ -158,6 +187,47 @@ export default function AdminPlansPage() {
           }
         }}
       />
+
+      <PlanDescriptionDialog
+        open={isDescriptionOpen}
+        plan={descriptionPlan}
+        onOpenChange={(open) => {
+          setIsDescriptionOpen(open);
+          if (!open) {
+            setDescriptionPlan(null);
+          }
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Plan</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete plan &quot;{planToDelete?.name}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setPlanToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deletePlan.isPending}
+            >
+              {deletePlan.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

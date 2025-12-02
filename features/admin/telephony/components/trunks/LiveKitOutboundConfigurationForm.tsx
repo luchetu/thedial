@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useStore } from "@tanstack/react-form";
 import { useForm, FormField } from "@/lib/forms";
 import { Label } from "@/components/ui/label";
@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTwilioTrunks } from "@/features/admin/telephony/hooks/useTwilioTrunks";
-import { useTwilioTrunk } from "@/features/admin/telephony/hooks/useTwilioTrunks";
+import { useTrunks } from "@/features/admin/telephony/hooks/useTrunks";
+import { useTrunk } from "@/features/admin/telephony/hooks/useTrunks";
 import { useTwilioCredentials } from "@/features/admin/telephony/hooks/useTwilioCredentialLists";
 import type { TrunkFormValues } from "./types";
 
@@ -33,12 +33,16 @@ interface LiveKitOutboundConfigurationFormProps {
   form: ReturnType<typeof useForm<TrunkFormValues>>;
   isLoading?: boolean;
   showTitle?: boolean;
+  trunkId?: string; // LiveKit trunk ID for fetching stored password when editing
+  isEditMode?: boolean; // Whether we're editing an existing trunk
 }
 
 export function LiveKitOutboundConfigurationForm({
   form,
   isLoading = false,
   showTitle = true,
+  trunkId,
+  isEditMode = false,
 }: LiveKitOutboundConfigurationFormProps) {
   const [outboundNumberInput, setOutboundNumberInput] = useState("");
   const [showOutboundPassword, setShowOutboundPassword] = useState(false);
@@ -48,17 +52,58 @@ export function LiveKitOutboundConfigurationForm({
     const nums = state.values.outboundNumbers;
     return Array.isArray(nums) ? nums : [];
   });
+  const livekitCredentialMode = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.livekitCredentialMode || "create");
   const twilioTrunkSid = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.twilioTrunkSid);
   const credentialListSid = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.twilioCredentialListSid);
   const credentialSid = useStore(form.store, (state: { values: TrunkFormValues }) => state.values.twilioCredentialSid);
 
-  // Fetch Twilio trunks
-  const { data: twilioTrunks = [], isLoading: isLoadingTwilioTrunks } = useTwilioTrunks();
+  // Fetch Twilio trunks using unified trunks API (same approach as credential lists page)
+  const { data: trunksData = [], isLoading: isLoadingTwilioTrunks } = useTrunks({ 
+    provider: "twilio", 
+    type: "twilio" 
+  });
+  
+  // Map unified Trunk[] to TwilioTrunk-like format for compatibility
+  const twilioTrunks = useMemo(() => {
+    return trunksData.map(trunk => ({
+      id: trunk.externalId || trunk.id, // Use externalId (Twilio SID) as the ID
+      friendlyName: trunk.name,
+      domainName: "", // Will be populated from configuration if needed
+      terminationSipDomain: "", // Will be populated from configuration if needed
+      externalId: trunk.externalId,
+      trunkId: trunk.id, // Store the trunk UUID for fetching configuration
+    }));
+  }, [trunksData]);
   
   // Fetch selected Twilio trunk details to get credential list
-  const { data: selectedTwilioTrunk } = useTwilioTrunk(twilioTrunkSid || "", {
-    enabled: !!twilioTrunkSid,
+  // Find the trunk by externalId (Twilio SID) since that's what we store in the form
+  const selectedTrunk = useMemo(() => {
+    if (!twilioTrunkSid) return null;
+    return trunksData.find(t => t.externalId === twilioTrunkSid);
+  }, [twilioTrunkSid, trunksData]);
+  
+  // Fetch full Twilio trunk details including configuration
+  const { data: selectedTrunkFull } = useTrunk(selectedTrunk?.id || "", {
+    enabled: !!selectedTrunk?.id,
   });
+
+  // Fetch LiveKit outbound trunk details to get stored password (for edit mode)
+  const { data: liveKitTrunkData } = useTrunk(trunkId || "", {
+    enabled: !!trunkId,
+  });
+
+  // Get stored password from LiveKit trunk configuration (for edit mode)
+  const storedPassword = useMemo(() => {
+    if (liveKitTrunkData?.metadata) {
+      const metadata = liveKitTrunkData.metadata as Record<string, unknown>;
+      // Backend decrypts and returns password as authPassword in metadata
+      const pwd = metadata.authPassword as string | undefined;
+      if (pwd && typeof pwd === "string" && pwd.trim() !== "") {
+        return pwd;
+      }
+    }
+    return undefined;
+  }, [liveKitTrunkData]);
 
   // Fetch credentials from the credential list
   const { data: credentials = [], isLoading: isLoadingCredentials } = useTwilioCredentials(
@@ -66,57 +111,139 @@ export function LiveKitOutboundConfigurationForm({
     { enabled: !!credentialListSid }
   );
 
+  // Extract credential list SID from selected Twilio trunk metadata
+  const credentialListSidFromTrunk = useMemo(() => {
+    if (selectedTrunkFull?.metadata) {
+      const metadata = selectedTrunkFull.metadata as Record<string, unknown>;
+      return metadata?.credentialListSid as string | undefined;
+    }
+    return undefined;
+  }, [selectedTrunkFull]);
+
   // When Twilio trunk is selected, update credential list SID and auto-fill SIP address
   useEffect(() => {
-    if (selectedTwilioTrunk) {
-      if (selectedTwilioTrunk.credentialListSid) {
-        form.setFieldValue("twilioCredentialListSid", selectedTwilioTrunk.credentialListSid);
+    if (selectedTrunkFull?.metadata) {
+      // Extract configuration data from metadata (backend merges config into metadata)
+      const metadata = selectedTrunkFull.metadata as Record<string, unknown>;
+      // Get credential list SID from configuration
+      const credentialListSid = metadata?.credentialListSid as string | undefined;
+      if (credentialListSid) {
+        form.setFieldValue("twilioCredentialListSid", credentialListSid);
       }
       // Auto-fill SIP address from Twilio trunk's termination domain
-      const sipAddress = selectedTwilioTrunk.domainName || selectedTwilioTrunk.terminationSipDomain;
-      if (sipAddress) {
-        form.setFieldValue("address", sipAddress);
+      const terminationDomain = (metadata?.terminationDomain || metadata?.termination_domain) as string | undefined;
+      if (terminationDomain) {
+        const currentAddress = form.getFieldValue("address");
+        // Only set if address is empty or if we're in edit mode
+        if (!currentAddress || String(currentAddress).trim() === "" || isEditMode) {
+          form.setFieldValue("address", terminationDomain);
+          console.log("[LiveKitOutboundConfig] Auto-filled address from Twilio trunk:", terminationDomain);
+        }
+      } else {
+        console.log("[LiveKitOutboundConfig] No termination domain found in Twilio trunk metadata, keys:", Object.keys(metadata));
       }
       // When switching to Twilio trunk, clear LiveKit credentials (user will select Twilio credential)
       // Don't clear password here - wait until credential is selected
     }
-  }, [selectedTwilioTrunk, form]);
+  }, [selectedTrunkFull, form, isEditMode]);
 
-  // When credential is selected, replace LiveKit credentials with Twilio credential
+  // For credential list selector, we only have one credential list per Twilio trunk
+  // So we show it as a read-only field or just use the one from the trunk
+  const credentialLists = useMemo(() => {
+    if (credentialListSidFromTrunk) {
+      return [{ sid: credentialListSidFromTrunk, friendlyName: "Credential List" }];
+    }
+    return [];
+  }, [credentialListSidFromTrunk]);
+
+  // When credential is selected, auto-fill username and password from Twilio credential
+  // These are stored in form state for backend submission, but not shown to user
   // This also runs when credentials are loaded and a credentialSid is already set (editing scenario)
   useEffect(() => {
-    if (credentialSid && credentials.length > 0) {
+    if (credentialSid && credentials.length > 0 && livekitCredentialMode === "existing") {
       const selectedCredential = credentials.find((c) => c.sid === credentialSid);
       if (selectedCredential) {
-        // Always auto-fill username from Twilio credential
+        // Auto-fill username from Twilio credential (for backend)
         form.setFieldValue("authUsername", selectedCredential.username);
         
-        // Get current password from form
-        const currentPwd = form.getFieldValue("authPassword");
-        const currentPwdStr = typeof currentPwd === "string" && currentPwd.trim() !== "" ? currentPwd : "";
-        
-        // Only clear password if it's different from what we expect
-        // If editing and password is already set, keep it (it might be the correct Twilio password)
-        // If switching credentials, clear it so user enters the new credential's password
-        const currentUsername = form.getFieldValue("authUsername");
-        if (currentUsername !== selectedCredential.username && currentPwdStr) {
-          // Different credential selected - clear password
-          form.setFieldValue("authPassword", "");
-          console.log("[LiveKitOutboundConfig] Twilio credential selected (different):", {
+        // Auto-fill password from credential if available (backend fetches from local DB)
+        // If password is not available, backend will require it and store it for future use
+        if (selectedCredential.password) {
+          form.setFieldValue("authPassword", selectedCredential.password);
+          console.log("[LiveKitOutboundConfig] Twilio credential selected - username and password stored for backend:", {
             credentialUsername: selectedCredential.username,
-            previousUsername: currentUsername,
-            message: "Different credential selected. Password cleared - user must enter new credential password.",
+            hasPassword: true,
           });
         } else {
-          console.log("[LiveKitOutboundConfig] Twilio credential selected:", {
+          // Password not available - clear it, backend will handle the error
+          form.setFieldValue("authPassword", "");
+          console.log("[LiveKitOutboundConfig] Twilio credential selected - password not available in local DB:", {
             credentialUsername: selectedCredential.username,
-            hasPassword: !!currentPwdStr,
-            message: "Username auto-filled from Twilio credential.",
+            message: "Password not found. Backend will require it or fetch from credential update.",
           });
         }
+        
+        // Trigger re-validation to clear errors - validators will now return undefined since mode is "existing"
+        // Use a small timeout to ensure form state is updated
+        setTimeout(() => {
+          form.validateField("authUsername", "change");
+          form.validateField("authPassword", "change");
+        }, 0);
       }
     }
-  }, [credentialSid, credentials, form]);
+  }, [credentialSid, credentials, livekitCredentialMode, form]);
+
+  // Clear validation errors when switching to "existing" mode and credential is selected
+  useEffect(() => {
+    if (livekitCredentialMode === "existing" && credentialSid) {
+      // When using existing credentials, authUsername and authPassword are auto-filled
+      // Clear any validation errors for these fields
+      setTimeout(() => {
+        form.validateField("authUsername", "change");
+        form.validateField("authPassword", "change");
+      }, 0);
+    }
+  }, [livekitCredentialMode, credentialSid, form]);
+
+  // Log form validation state for debugging
+  useEffect(() => {
+    const canSubmit = form.state.canSubmit;
+    const fieldMeta = form.state.fieldMeta;
+    const errorMap = form.state.errorMap;
+    
+    // Log all fields with errors
+    const fieldsWithErrors: Record<string, string[]> = {};
+    Object.entries(fieldMeta).forEach(([fieldName, meta]) => {
+      if (meta && 'errors' in meta && Array.isArray(meta.errors) && meta.errors.length > 0) {
+        fieldsWithErrors[fieldName] = meta.errors;
+      }
+    });
+    
+    if (Object.keys(fieldsWithErrors).length > 0 || !canSubmit) {
+      console.log("[LiveKitOutboundConfigurationForm] Form validation state:", {
+        canSubmit,
+        fieldsWithErrors,
+        errorMap,
+        formValues: form.state.values,
+        credentialMode: livekitCredentialMode,
+      });
+    }
+  }, [form.state.canSubmit, form.state.fieldMeta, form.state.errorMap, form.state.values, livekitCredentialMode, form]);
+
+  // When no credential is selected, show password from LiveKit trunk (for edit mode)
+  useEffect(() => {
+    if (!credentialSid && storedPassword && isEditMode) {
+      // No credential selected - show password from LiveKit trunk if available
+      const currentPwd = form.getFieldValue("authPassword");
+      const currentPwdStr = typeof currentPwd === "string" && currentPwd.trim() !== "" ? currentPwd : "";
+      
+      // Only set if form doesn't already have a password
+      if (!currentPwdStr) {
+        form.setFieldValue("authPassword", storedPassword);
+        console.log("[LiveKitOutboundConfig] No credential selected - password autofilled from LiveKit trunk");
+      }
+    }
+  }, [credentialSid, storedPassword, isEditMode, form]);
 
   const handleAddOutboundNumber = () => {
     const formatted = formatPhoneNumber(outboundNumberInput);
@@ -142,58 +269,207 @@ export function LiveKitOutboundConfigurationForm({
         <div>
           <h3 className="text-lg font-semibold mb-1">LiveKit Outbound Configuration</h3>
           <p className="text-sm text-muted-foreground">
-            Configure SIP credentials and phone numbers for outbound calls. Select a Twilio trunk to use credentials from its credential list, or enter credentials manually.
+            Configure SIP credentials and phone numbers for outbound calls. Choose to use existing Twilio credentials or create new credentials.
           </p>
         </div>
       )}
 
-      {/* Twilio Trunk Selection */}
-      <form.Field name="twilioTrunkSid">
+      {/* Credential Mode Selection */}
+      <form.Field
+        name="livekitCredentialMode"
+        validators={{
+          onChange: ({ value }) => {
+            if (!value) return "This field is required";
+            return undefined;
+          },
+        }}
+      >
         {(field) => (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Twilio Trunk <span className="text-xs text-muted-foreground">(optional)</span>
-            </Label>
-            <Select
-              value={field.state.value ? String(field.state.value) : undefined}
+            <Label className="text-sm font-medium">Credential Source</Label>
+            <RadioGroup
+              value={String(field.state.value || "create")}
               onValueChange={(value) => {
-                field.handleChange(value || undefined);
-                // Clear credential selection when trunk changes
-                form.setFieldValue("twilioCredentialSid", undefined);
-                form.setFieldValue("twilioCredentialListSid", undefined);
-                // Clear username when selecting a trunk, but preserve password if it exists
-                if (value) {
+                const mode = value as "existing" | "create";
+                field.handleChange(mode);
+                if (mode === "existing") {
+                  // Clear manual credential fields when switching to existing
                   form.setFieldValue("authUsername", "");
-                  // Don't clear password - preserve existing password from trunk data
+                  form.setFieldValue("authPassword", "");
+                } else {
+                  // Clear Twilio credential fields when switching to create
+                  form.setFieldValue("twilioTrunkSid", undefined);
+                  form.setFieldValue("twilioCredentialListSid", undefined);
+                  form.setFieldValue("twilioCredentialSid", undefined);
                 }
+              }}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="existing" id="livekit-credential-mode-existing" />
+                <Label htmlFor="livekit-credential-mode-existing" className="font-normal cursor-pointer">
+                  Use Existing Credentials
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="create" id="livekit-credential-mode-create" />
+                <Label htmlFor="livekit-credential-mode-create" className="font-normal cursor-pointer">
+                  Create New Credentials
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+      </form.Field>
+
+      {/* Twilio Trunk Selection for Credentials (only shown when "existing" is selected) */}
+      {livekitCredentialMode === "existing" && (
+        <>
+          <form.Field
+            name="twilioTrunkSid"
+            validators={{
+              onChange: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate if "existing" mode is selected
+                if (currentMode === "existing" && (!value || String(value).trim() === "")) {
+                  return "Please select a Twilio trunk";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate on submit if "existing" mode is selected
+                if (currentMode === "existing" && (!value || String(value).trim() === "")) {
+                  return "Please select a Twilio trunk";
+                }
+                return undefined;
+              },
+            }}
+          >
+            {(field) => (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Twilio Trunk <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={String(field.state.value || "")}
+                  onValueChange={(value) => {
+                    field.handleChange(value || undefined);
+                    // Clear credential list and credential when trunk changes
+                    form.setFieldValue("twilioCredentialListSid", undefined);
+                    form.setFieldValue("twilioCredentialSid", undefined);
               }}
               disabled={isLoading || isLoadingTwilioTrunks}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a Twilio trunk (optional - leave empty for manual entry)" />
+                    <SelectValue placeholder="Select a Twilio trunk" />
               </SelectTrigger>
               <SelectContent>
                 {twilioTrunks.map((trunk) => (
                   <SelectItem key={trunk.id} value={trunk.id}>
-                    {trunk.friendlyName} ({trunk.domainName || trunk.terminationSipDomain})
+                        {trunk.friendlyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!field.state.meta.isValid && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Select a Twilio trunk to use its credentials for this LiveKit outbound trunk.
+                </p>
+              </div>
+            )}
+          </form.Field>
+
+          {twilioTrunkSid && (
+            <>
+              <form.Field
+                name="twilioCredentialListSid"
+                validators={{
+                  onChange: ({ value, fieldApi }) => {
+                    // Check current credential mode and trunk from form state
+                    const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                    const currentTrunkSid = fieldApi.form.getFieldValue("twilioTrunkSid");
+                    // Only validate if "existing" mode and trunk is selected
+                    if (currentMode === "existing" && currentTrunkSid && (!value || String(value).trim() === "")) {
+                      return "Please select a credential list";
+                    }
+                    return undefined;
+                  },
+                  onSubmit: ({ value, fieldApi }) => {
+                    // Check current credential mode and trunk from form state
+                    const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                    const currentTrunkSid = fieldApi.form.getFieldValue("twilioTrunkSid");
+                    // Only validate on submit if "existing" mode and trunk is selected
+                    if (currentMode === "existing" && currentTrunkSid && (!value || String(value).trim() === "")) {
+                      return "Please select a credential list";
+                    }
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Credential List <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={String(field.state.value || "")}
+                      onValueChange={(value) => {
+                        field.handleChange(value || undefined);
+                        // Clear credential selection when list changes
+                        form.setFieldValue("twilioCredentialSid", undefined);
+                      }}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a credential list" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {credentialLists.map((list) => (
+                          <SelectItem key={list.sid} value={list.sid}>
+                            {list.friendlyName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+                    {!field.state.meta.isValid && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {field.state.meta.errors.join(", ")}
+                      </p>
+                    )}
             <p className="text-xs text-muted-foreground">
-              Select a Twilio trunk to use credentials from its credential list, or leave empty to enter credentials manually below.
+                      Select the credential list from the selected Twilio trunk.
             </p>
           </div>
         )}
       </form.Field>
 
-      {/* Credential Selection (only shown when Twilio trunk is selected) */}
-      {twilioTrunkSid && credentialListSid && (
         <form.Field
           name="twilioCredentialSid"
           validators={{
-            onChange: ({ value }) => {
-              if (!value || String(value).trim() === "") {
+                  onChange: ({ value, fieldApi }) => {
+                    // Check current credential mode, trunk, and credential list from form state
+                    const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                    const currentTrunkSid = fieldApi.form.getFieldValue("twilioTrunkSid");
+                    const currentCredentialListSid = fieldApi.form.getFieldValue("twilioCredentialListSid");
+                    // Only validate if "existing" mode, trunk and credential list are selected
+                    if (currentMode === "existing" && currentTrunkSid && currentCredentialListSid && (!value || String(value).trim() === "")) {
+                      return "Please select a credential from the list";
+                    }
+                    return undefined;
+                  },
+                  onSubmit: ({ value, fieldApi }) => {
+                    // Check current credential mode, trunk, and credential list from form state
+                    const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                    const currentTrunkSid = fieldApi.form.getFieldValue("twilioTrunkSid");
+                    const currentCredentialListSid = fieldApi.form.getFieldValue("twilioCredentialListSid");
+                    // Only validate on submit if "existing" mode, trunk and credential list are selected
+                    if (currentMode === "existing" && currentTrunkSid && currentCredentialListSid && (!value || String(value).trim() === "")) {
                 return "Please select a credential from the list";
               }
               return undefined;
@@ -229,11 +505,24 @@ export function LiveKitOutboundConfigurationForm({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Select a credential from the Twilio trunk&apos;s credential list. The username will be auto-filled, but you&apos;ll need to enter the password below (Twilio API doesn&apos;t return passwords for security).
+                      Select a credential from the Twilio trunk&apos;s credential list. Username and password will be automatically fetched.
               </p>
             </div>
           )}
         </form.Field>
+            </>
+          )}
+        </>
+      )}
+
+      {/* When Twilio trunk and credential are selected, show info message - no username/password fields needed */}
+      {livekitCredentialMode === "existing" && twilioTrunkSid && credentialSid && (
+        <div className="space-y-2 p-4 bg-muted/50 rounded-md border">
+          <p className="text-sm font-medium">Using Twilio Credential</p>
+          <p className="text-xs text-muted-foreground">
+            Username and password will be automatically fetched from the selected Twilio credential and used to configure the LiveKit outbound trunk.
+          </p>
+        </div>
       )}
 
       <form.Field
@@ -356,15 +645,30 @@ export function LiveKitOutboundConfigurationForm({
         </div>
       )}
 
-      {/* Manual Credential Entry (only shown when no Twilio trunk is selected) */}
-      {!twilioTrunkSid && (
+      {/* Manual Credential Entry (only shown when "create" mode is selected) */}
+      {livekitCredentialMode === "create" && (
         <>
           <form.Field
             name="authUsername"
             validators={{
-              onChange: ({ value }) => {
+              onChange: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate if "create" mode is selected
+                if (currentMode === "create") {
+                  const stringValue = String(value || "");
+                  if (!stringValue || stringValue.trim() === "") return "Username is required";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate on submit if "create" mode is selected
+                if (currentMode === "create") {
                 const stringValue = String(value || "");
                 if (!stringValue || stringValue.trim() === "") return "Username is required";
+                }
                 return undefined;
               },
             }}
@@ -389,9 +693,24 @@ export function LiveKitOutboundConfigurationForm({
           <form.Field
             name="authPassword"
             validators={{
-              onChange: ({ value }) => {
+              onChange: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate if "create" mode is selected
+                if (currentMode === "create") {
+                  const stringValue = String(value || "");
+                  if (!stringValue || stringValue.trim() === "") return "Password is required";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate on submit if "create" mode is selected
+                if (currentMode === "create") {
                 const stringValue = String(value || "");
                 if (!stringValue || stringValue.trim() === "") return "Password is required";
+                }
                 return undefined;
               },
             }}
@@ -434,83 +753,41 @@ export function LiveKitOutboundConfigurationForm({
         </>
       )}
 
-      {/* Credential Entry when Twilio trunk is selected (username auto-filled, password required) */}
+      {/* When Twilio trunk and credential are selected, show info message - no username/password fields needed */}
       {twilioTrunkSid && credentialSid && (
-        <>
-          <form.Field name="authUsername">
-            {(field) => (
-              <FormField
-                field={field}
-                name="authUsername"
-                label="SIP Username (from selected credential)"
-                placeholder="Auto-filled from selected credential"
-                required
-                disabled={true}
-                error={undefined}
-              />
-            )}
-          </form.Field>
-
-          <form.Field
-            name="authPassword"
-            validators={{
-              onBlur: ({ value }) => {
-                const stringValue = String(value || "");
-                if (!stringValue || stringValue.trim() === "") return "Password is required";
-                return undefined;
-              },
-            }}
-          >
-            {(field) => (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  SIP Password (from selected credential) <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <input
-                    type={showOutboundPassword ? "text" : "password"}
-                    value={String(field.state.value || "")}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    className="w-full px-3 py-2 border rounded-md font-mono text-sm pr-10"
-                    placeholder="Enter password for the selected credential"
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOutboundPassword(!showOutboundPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showOutboundPassword ? (
-                      <span className="text-xs text-muted-foreground">Hide</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Show</span>
-                    )}
-                  </button>
-                </div>
-                {!field.state.meta.isValid && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {field.state.meta.errors.join(", ")}
-                  </p>
-                )}
+        <div className="space-y-2 p-4 bg-muted/50 rounded-md border">
+          <p className="text-sm font-medium">Using Twilio Credential</p>
                 <p className="text-xs text-muted-foreground">
-                  Enter the password for the selected credential. These are the same credentials stored in the Twilio credential list - LiveKit will use them to authenticate with Twilio when making outbound calls. Twilio API doesn&apos;t return passwords for security reasons, so you need to enter it manually.
+            Username and password will be automatically fetched from the selected Twilio credential and used to configure the LiveKit outbound trunk.
                 </p>
               </div>
-            )}
-          </form.Field>
-        </>
       )}
 
       {/* Show username and password fields when Twilio trunk is selected but no credential selected yet (editing scenario) */}
-      {twilioTrunkSid && !credentialSid && (
+      {/* Only show if credentialMode is "create" - if "existing", user should select a credential */}
+      {livekitCredentialMode === "create" && twilioTrunkSid && !credentialSid && (
         <>
           <form.Field
             name="authUsername"
             validators={{
-              onChange: ({ value }) => {
+              onChange: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate if "create" mode is selected
+                if (currentMode === "create") {
+                  const stringValue = String(value || "");
+                  if (!stringValue || stringValue.trim() === "") return "Username is required";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate on submit if "create" mode is selected
+                if (currentMode === "create") {
                 const stringValue = String(value || "");
                 if (!stringValue || stringValue.trim() === "") return "Username is required";
+                }
                 return undefined;
               },
             }}
@@ -535,9 +812,24 @@ export function LiveKitOutboundConfigurationForm({
           <form.Field
             name="authPassword"
             validators={{
-              onBlur: ({ value }) => {
+              onChange: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate if "create" mode is selected
+                if (currentMode === "create") {
+                  const stringValue = String(value || "");
+                  if (!stringValue || stringValue.trim() === "") return "Password is required";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value, fieldApi }) => {
+                // Check current credential mode from form state
+                const currentMode = fieldApi.form.getFieldValue("livekitCredentialMode") || "create";
+                // Only validate on submit if "create" mode is selected
+                if (currentMode === "create") {
                 const stringValue = String(value || "");
                 if (!stringValue || stringValue.trim() === "") return "Password is required";
+                }
                 return undefined;
               },
             }}

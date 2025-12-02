@@ -137,16 +137,13 @@ export default function InboundTrunksPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">LiveKit Inbound Trunks</h3>
 
-                {isLoadingInboundTrunks ? (
-                  <div className="text-sm text-muted-foreground">Loading inbound trunks…</div>
-                ) : (
                 <DataTable
                   data={inboundTrunks}
                   // @ts-expect-error - TanStack Table column type inference limitation
                   columns={inboundColumns}
                   emptyMessage="No results."
+                  isLoading={isLoadingInboundTrunks}
                 />
-                )}
               </div>
 
               {/* Divider */}
@@ -159,16 +156,13 @@ export default function InboundTrunksPage() {
                   Twilio trunks configured with origination URLs pointing to LiveKit inbound trunks.
                 </p>
 
-                {isLoadingTwilioTrunks ? (
-                  <div className="text-sm text-muted-foreground">Loading Twilio trunks…</div>
-                ) : (
                 <DataTable
-                    data={twilioTrunks}
+                  data={twilioTrunks}
                   // @ts-expect-error - TanStack Table column type inference limitation
                   columns={twilioOriginationColumns}
                   emptyMessage="No Twilio trunks configured with origination URLs."
+                  isLoading={isLoadingTwilioTrunks}
                 />
-                )}
               </div>
             </div>
           </div>

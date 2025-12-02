@@ -45,7 +45,7 @@ export const DispatchRuleForm = ({
   },
   onSubmit,
   isLoading = false,
-  submitLabel = "Create Dispatch Rule",
+  submitLabel = "Create SIP Dispatch Rule",
   trunkOptions = [],
   isTrunkLoading = false,
 }: DispatchRuleFormProps) => {
@@ -80,13 +80,19 @@ export const DispatchRuleForm = ({
         };
 
         // Add type-specific fields
-        if (values.type === "individual" && values.roomPrefix) {
+        if (values.type === "individual") {
+          if (!values.roomPrefix || values.roomPrefix.trim() === "") {
+            throw new Error("Room prefix is required for individual dispatch rules");
+          }
           request.roomPrefix = values.roomPrefix;
         } else if (values.type === "direct") {
           if (values.roomName) request.roomName = values.roomName;
           if (values.pin) request.pin = values.pin;
         } else if (values.type === "callee") {
-          if (values.roomPrefix) request.roomPrefix = values.roomPrefix;
+          if (!values.roomPrefix || values.roomPrefix.trim() === "") {
+            throw new Error("Room prefix is required for callee dispatch rules");
+          }
+          request.roomPrefix = values.roomPrefix;
           request.randomize = values.randomize || false;
         }
 
@@ -201,7 +207,7 @@ export const DispatchRuleForm = ({
                 <p className="text-sm text-muted-foreground">Loading trunks…</p>
               ) : trunkOptions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No trunks available. Create a trunk before adding a dispatch rule.
+                  No trunks available. Create a trunk before adding a SIP dispatch rule.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -244,13 +250,26 @@ export const DispatchRuleForm = ({
 
         {/* Conditional Fields Based on Rule Type */}
         {ruleType === "individual" && (
-          <form.Field name="roomPrefix">
+          <form.Field
+            name="roomPrefix"
+            validators={{
+              onChange: ({ value }) => {
+                const stringValue = String(value || "");
+                if (!stringValue || stringValue.trim() === "")
+                  return "Room prefix is required for individual dispatch rules";
+                if (stringValue.trim().length < 2)
+                  return "Must be at least 2 characters";
+                return undefined;
+              },
+            }}
+          >
             {(field) => (
               <FormField
                 field={field}
                 name="roomPrefix"
                 label="Room Prefix"
                 placeholder="e.g., call-"
+                required
                 error={
                   !field.state.meta.isValid
                     ? field.state.meta.errors.join(", ")
@@ -298,13 +317,26 @@ export const DispatchRuleForm = ({
 
         {ruleType === "callee" && (
           <>
-            <form.Field name="roomPrefix">
+            <form.Field
+              name="roomPrefix"
+              validators={{
+                onChange: ({ value }) => {
+                  const stringValue = String(value || "");
+                  if (!stringValue || stringValue.trim() === "")
+                    return "Room prefix is required for callee dispatch rules";
+                  if (stringValue.trim().length < 2)
+                    return "Must be at least 2 characters";
+                  return undefined;
+                },
+              }}
+            >
               {(field) => (
                 <FormField
                   field={field}
                   name="roomPrefix"
                   label="Room Prefix"
                   placeholder="e.g., number-"
+                  required
                   error={
                     !field.state.meta.isValid
                       ? field.state.meta.errors.join(", ")
@@ -338,17 +370,31 @@ export const DispatchRuleForm = ({
           <h3 className="text-sm font-semibold">Agent Configuration</h3>
           <form.Field name="agentName">
             {(field) => (
-              <FormField
-                field={field}
-                name="agentName"
-                label="Agent Name"
-                placeholder="e.g., telephony-agent"
-                error={
-                  !field.state.meta.isValid
-                    ? field.state.meta.errors.join(", ")
-                    : undefined
-                }
-              />
+              <div className="space-y-2">
+                <Label htmlFor="agentName" className="text-sm font-medium">
+                  Agent Name
+                </Label>
+                <Select
+                  value={String(field.state.value || "") || undefined}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+                  <SelectTrigger id="agentName" className="w-full">
+                    <SelectValue placeholder="Select an agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="telephony-agent">telephony-agent</SelectItem>
+                    <SelectItem value="inbound-agent">inbound-agent</SelectItem>
+                    <SelectItem value="support-agent">support-agent</SelectItem>
+                    <SelectItem value="sales-agent">sales-agent</SelectItem>
+                    <SelectItem value="custom-agent">custom-agent</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!field.state.meta.isValid && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
             )}
           </form.Field>
           <form.Field name="autoDispatch">

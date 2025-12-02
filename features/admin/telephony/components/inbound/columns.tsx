@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { createColumnHelper } from "@/components/ui/data-table";
 import type { InboundTrunk, DispatchRule, TwilioTrunk } from "@/features/admin/telephony/types";
 import { formatDate } from "@/lib/utils/date";
+import { Edit, Trash2 } from "lucide-react";
 
 const inboundColumnHelper = createColumnHelper<InboundTrunk>();
 const dispatchRuleColumnHelper = createColumnHelper<DispatchRule>();
@@ -156,26 +157,33 @@ export function getDispatchRuleColumns({ onEdit, onDelete }: DispatchRuleActions
     }),
     dispatchRuleColumnHelper.display({
       id: "actions",
+      enableColumnFilter: false, // Disable filtering for actions column
       header: () => <div className="text-right">Actions</div>,
       cell: (info) => {
         const rule = info.row.original;
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit?.(rule)}
-              className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
-            >
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete?.(rule)}
-            >
-              Delete
-            </Button>
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(rule)}
+                title="Edit SIP dispatch rule"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(rule)}
+                className="text-destructive hover:text-destructive"
+                title="Delete SIP dispatch rule"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

@@ -47,6 +47,15 @@ export function LiveKitOutboundConfigurationDialog({
       // Backend now decrypts and returns password as authPassword in metadata
       const authPassword = config.authPassword || config.twilioPassword;
       
+      // Determine credential mode based on whether Twilio credentials are used
+      const hasTwilioCredential = !!(config.twilioTrunkSid || config.twilioCredentialSid || config.twilioCredentialListSid);
+      baseValues.livekitCredentialMode = hasTwilioCredential ? "existing" : "create";
+      
+      // Set Twilio credential references if they exist
+      if (config.twilioTrunkSid) baseValues.twilioTrunkSid = String(config.twilioTrunkSid);
+      if (config.twilioCredentialListSid) baseValues.twilioCredentialListSid = String(config.twilioCredentialListSid);
+      if (config.twilioCredentialSid) baseValues.twilioCredentialSid = String(config.twilioCredentialSid);
+      
       console.log("[LiveKitOutboundConfig] defaultValues - metadata:", {
         configKeys: Object.keys(config),
         hasAuthPassword: !!config.authPassword,
@@ -54,6 +63,8 @@ export function LiveKitOutboundConfigurationDialog({
         hasPasswordEnc: !!config.authPasswordEnc,
         authPasswordType: typeof authPassword,
         authPasswordLength: typeof authPassword === "string" ? authPassword.length : 0,
+        hasTwilioCredential,
+        credentialMode: baseValues.livekitCredentialMode,
       });
       
       if (typeof address === "string") baseValues.address = address;
@@ -67,6 +78,9 @@ export function LiveKitOutboundConfigurationDialog({
         console.log("[LiveKitOutboundConfig] Setting password in defaultValues");
         baseValues.authPassword = authPassword;
       }
+    } else {
+      // Default to "create" mode if no metadata
+      baseValues.livekitCredentialMode = "create";
     }
     
     return baseValues;
@@ -81,18 +95,28 @@ export function LiveKitOutboundConfigurationDialog({
       outboundNumberMode: defaultValues.outboundNumberMode || "any",
       outboundNumbers: defaultValues.outboundNumbers || [],
       address: defaultValues.address || "",
+      livekitCredentialMode: defaultValues.livekitCredentialMode || "create",
       authUsername: defaultValues.authUsername || "",
       authPassword: defaultValues.authPassword || "",
+      twilioTrunkSid: defaultValues.twilioTrunkSid,
+      twilioCredentialListSid: defaultValues.twilioCredentialListSid,
+      twilioCredentialSid: defaultValues.twilioCredentialSid,
     },
     onSubmit: async (values) => {
       try {
         // Configure trunk (LiveKit Outbound-specific fields)
+        // If Twilio credential is selected, don't send username/password (backend will fetch from Twilio/local DB)
         const configRequest: ConfigureTrunkRequest = {
           address: values.address.trim(),
           numbers: values.outboundNumberMode === "any" ? ["*"] : values.outboundNumbers,
-          authUsername: values.authUsername.trim(),
-          // Only include password if it's been changed (not empty)
-          authPassword: values.authPassword.trim() || undefined,
+          // Only send username/password if "create" mode is selected (manual entry mode)
+          // When "existing" mode is selected, backend fetches username from Twilio and password from local DB
+          authUsername: values.livekitCredentialMode === "existing" ? undefined : (values.authUsername?.trim() || undefined),
+          authPassword: values.livekitCredentialMode === "existing" ? undefined : (values.authPassword?.trim() || undefined),
+          // Include Twilio credential references if "existing" mode is selected
+          twilioTrunkSid: values.livekitCredentialMode === "existing" ? (values.twilioTrunkSid || undefined) : undefined,
+          twilioCredentialListSid: values.livekitCredentialMode === "existing" ? (values.twilioCredentialListSid || undefined) : undefined,
+          twilioCredentialSid: values.livekitCredentialMode === "existing" ? (values.twilioCredentialSid || undefined) : undefined,
         };
 
         await configureMutation.mutateAsync({
@@ -138,7 +162,12 @@ export function LiveKitOutboundConfigurationDialog({
         hasPassword_enc: !!config.password_enc,
       });
       
-      if (typeof address === "string") form.setFieldValue("address", address);
+      if (typeof address === "string") {
+        form.setFieldValue("address", address);
+        console.log("[LiveKitOutboundConfig] Set address from metadata:", address);
+      } else {
+        console.log("[LiveKitOutboundConfig] No address found in metadata, keys:", Object.keys(config));
+      }
       if (Array.isArray(numbers)) {
         form.setFieldValue("outboundNumberMode", numbers.includes("*") || numbers.length === 0 ? "any" : "specific");
         form.setFieldValue("outboundNumbers", numbers.filter((n) => n !== "*"));
@@ -150,6 +179,16 @@ export function LiveKitOutboundConfigurationDialog({
         form.setFieldValue("authPassword", authPassword);
       } else {
         console.log("[LiveKitOutboundConfig] No password found in metadata");
+      }
+      
+      // Set credential mode and Twilio references if they exist
+      const hasTwilioCredential = !!(config.twilioTrunkSid || config.twilioCredentialSid || config.twilioCredentialListSid);
+      if (hasTwilioCredential) {
+        form.setFieldValue("livekitCredentialMode", "existing");
+        if (config.twilioTrunkSid) form.setFieldValue("twilioTrunkSid", String(config.twilioTrunkSid));
+        if (config.twilioCredentialListSid) form.setFieldValue("twilioCredentialListSid", String(config.twilioCredentialListSid));
+        if (config.twilioCredentialSid) form.setFieldValue("twilioCredentialSid", String(config.twilioCredentialSid));
+        console.log("[LiveKitOutboundConfig] Set credential mode to 'existing' with Twilio references");
       }
     } else {
       console.log("[LiveKitOutboundConfig] No metadata in fullTrunkData");
@@ -163,12 +202,28 @@ export function LiveKitOutboundConfigurationDialog({
       title="Configure LiveKit Outbound Trunk"
       description="Update LiveKit outbound trunk configuration settings below."
     >
-      <Form<TrunkFormValues> onSubmit={() => form.handleSubmit()}>
+      <Form<TrunkFormValues> onSubmit={() => {
+        console.log("[LiveKitOutboundConfigurationDialog] Form submit button clicked");
+        console.log("[LiveKitOutboundConfigurationDialog] Form canSubmit:", form.state.canSubmit);
+        console.log("[LiveKitOutboundConfigurationDialog] Form fieldMeta:", form.state.fieldMeta);
+        console.log("[LiveKitOutboundConfigurationDialog] Form values:", form.state.values);
+        
+        // Log all fields with errors
+        Object.entries(form.state.fieldMeta).forEach(([fieldName, meta]) => {
+          if (meta && 'errors' in meta && Array.isArray(meta.errors) && meta.errors.length > 0) {
+            console.log(`[LiveKitOutboundConfigurationDialog] Field "${fieldName}" has errors:`, meta.errors);
+          }
+        });
+        
+        form.handleSubmit();
+      }}>
         <div className="space-y-6">
           <LiveKitOutboundConfigurationForm 
             form={form} 
             isLoading={isLoading} 
             showTitle={false}
+            trunkId={trunk.id}
+            isEditMode={true}
           />
           
           <div className="pt-4 border-t">

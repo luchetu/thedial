@@ -19,6 +19,12 @@ const adminTelephonyMenuItems = [
     description: "Manage Twilio credential lists and credentials",
   },
   {
+    title: "Dispatch Rules",
+    href: "/dashboard/settings/admin/telephony/dispatch-rules",
+    icon: Route,
+    description: "Configure call dispatch rules",
+  },
+  {
     title: "Trunks",
     href: "/dashboard/settings/admin/telephony/trunks",
     icon: Phone,
@@ -31,22 +37,16 @@ const adminTelephonyMenuItems = [
     description: "Configure call routing profiles",
   },
   {
-    title: "Plan Mappings",
-    href: "/dashboard/settings/admin/telephony/plan-routing-profiles",
-    icon: Link2,
-    description: "Map plans to routing profiles",
-  },
-  {
-    title: "Dispatch Rules",
-    href: "/dashboard/settings/admin/telephony/dispatch-rules",
-    icon: Route,
-    description: "Configure call dispatch rules",
-  },
-  {
     title: "Plans",
     href: "/dashboard/settings/admin/telephony/plans",
     icon: Layers,
     description: "Manage subscription plans",
+  },
+  {
+    title: "Plan Mappings",
+    href: "/dashboard/settings/admin/telephony/plan-routing-profiles",
+    icon: Link2,
+    description: "Map plans to routing profiles",
   },
 ];
 

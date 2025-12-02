@@ -8,6 +8,14 @@ import { Route } from "lucide-react";
 import type { DispatchRule } from "@/features/admin/telephony/types";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DispatchRuleDialog } from "@/features/admin/telephony/components/dispatch-rules/DispatchRuleDialog";
 import { getDispatchRuleColumns } from "@/features/admin/telephony/components/inbound/columns";
 import { StatsGrid } from "@/components/ui/stat-card";
@@ -17,6 +25,8 @@ import { toastError, toastSuccess } from "@/lib/toast";
 export default function DispatchRulesPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<DispatchRule | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState<DispatchRule | null>(null);
 
   const {
     data: dispatchRules = [],
@@ -28,7 +38,7 @@ export default function DispatchRulesPage() {
 
   useEffect(() => {
     if (isError && error) {
-      toastError(error.message || "Failed to load dispatch rules");
+      toastError(error.message || "Failed to load SIP dispatch rules");
     }
   }, [isError, error]);
 
@@ -39,12 +49,20 @@ export default function DispatchRulesPage() {
   };
 
   const handleDeleteRule = (rule: DispatchRule) => {
-    deleteMutation.mutate(rule.id, {
+    setRuleToDelete(rule);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!ruleToDelete?.id) return;
+    deleteMutation.mutate(ruleToDelete.id, {
       onSuccess: () => {
-        toastSuccess("Dispatch rule deleted");
+        toastSuccess("SIP dispatch rule deleted");
+        setDeleteDialogOpen(false);
+        setRuleToDelete(null);
       },
       onError: (mutationError) => {
-        toastError(`Failed to delete dispatch rule: ${mutationError?.message || "Unknown error"}`);
+        toastError(`Failed to delete SIP dispatch rule: ${mutationError?.message || "Unknown error"}`);
       },
     });
   };
@@ -77,7 +95,7 @@ export default function DispatchRulesPage() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         <PageHeader
-          title="Dispatch Rules"
+          title="SIP Dispatch Rules"
           icon={Route}
           action={
             <Button
@@ -104,20 +122,17 @@ export default function DispatchRulesPage() {
               columns={4}
             />
 
-            {/* Dispatch Rules Table */}
+            {/* SIP Dispatch Rules Table */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Dispatch Rules</h3>
+              <h3 className="text-lg font-medium">SIP Dispatch Rules</h3>
 
-              {isLoading ? (
-                <div className="text-sm text-muted-foreground">Loading dispatch rules…</div>
-              ) : (
               <DataTable
                 data={dispatchRules}
                 // @ts-expect-error - TanStack Table column type inference limitation
                 columns={dispatchRuleColumns}
-                emptyMessage="No dispatch rules found."
+                emptyMessage="No SIP dispatch rules found."
+                isLoading={isLoading}
               />
-              )}
             </div>
           </div>
         </div>
@@ -132,6 +147,36 @@ export default function DispatchRulesPage() {
         }}
         rule={editingRule}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete SIP Dispatch Rule</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete SIP dispatch rule &quot;{ruleToDelete?.name}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setRuleToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

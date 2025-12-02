@@ -18,8 +18,16 @@ export function useCurrentUser() {
       if (error?.status === 401) {
         return false;
       }
+      // Retry up to 2 times for other errors (network issues, etc.)
       return failureCount < 2;
     },
+    // Keep the query active and refetch on mount
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    // Don't immediately mark as stale
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    // Keep in cache longer
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 

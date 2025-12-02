@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Phone } from "lucide-react";
+import { Phone, X } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "@/components/ui/data-table";
-import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { getTrunkColumns } from "@/features/admin/telephony/components/trunks/columns";
@@ -327,31 +326,26 @@ export default function TrunksPage() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium opacity-0">Clear</Label>
                   <Button
-                    variant="outline"
+                    variant="primary-outline"
                     size="sm"
                     onClick={() => setColumnFilters([])}
                     className="w-[180px]"
                   >
+                    <X className="size-4" />
                     Clear filters
                   </Button>
                 </div>
               )}
             </div>
 
-            {isLoading && trunks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
-                <WaveLoader className="text-primary" />
-                <span>Loading trunks...</span>
-              </div>
-            ) : (
-              <DataTable<Trunk>
+            <DataTable<Trunk>
               data={trunks}
-                columns={columns as ColumnDef<Trunk>[]}
-                emptyMessage="No trunks found."
+              columns={columns as ColumnDef<Trunk>[]}
+              emptyMessage="No trunks found."
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              isLoading={isLoading}
             />
-            )}
           </div>
         </div>
       </div>

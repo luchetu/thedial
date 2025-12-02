@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Phone, XCircle, Settings } from "lucide-react";
@@ -11,11 +11,16 @@ import { useUserPhoneNumbers } from "@/features/phone-numbers/hooks/useUserPhone
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { UserPhoneNumber } from "@/features/phone-numbers/types";
+import { PhoneSettingsSecondaryMenu } from "@/components/phone-settings-secondary-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type StatusFilter = "all" | "active" | "inactive";
 
 export default function PhoneSettingsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<UserPhoneNumber | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { data: phoneNumbers, isLoading, error } = useUserPhoneNumbers();
 
   const formatPhoneNumber = (phone: string) => {
@@ -29,8 +34,56 @@ export default function PhoneSettingsPage() {
     return phone;
   };
 
+  const filteredPhoneNumbers = useMemo(() => {
+    if (!phoneNumbers) return [];
+
+    return phoneNumbers.filter((pn) => {
+      const isActive = pn.status === "active";
+
+      if (statusFilter === "active") {
+        return isActive;
+      }
+
+      if (statusFilter === "inactive") {
+        return !isActive;
+      }
+
+      return true;
+    });
+  }, [phoneNumbers, statusFilter]);
+
+  const getStatusBadgeClasses = (status: string) => {
+    if (status === "active") {
+      return "bg-green-100 text-green-700 border-green-200";
+    }
+    if (status === "released") {
+      return "bg-gray-100 text-gray-700 border-gray-200";
+    }
+    return "bg-gray-100 text-gray-700 border-gray-200";
+  };
+
+  const hasAnyNumbers = (phoneNumbers?.length ?? 0) > 0;
+
+  const getTypeBadgeLabel = (phoneNumber: UserPhoneNumber) => {
+    const sid = phoneNumber.twilioSid || "";
+    const isDial = sid && !sid.startsWith("non-twilio-");
+    return isDial ? "Dial" : "Caller ID";
+  };
+
   return (
     <div className="flex h-screen">
+      {/* Secondary menu */}
+      <aside className="w-60 shrink-0 border-r bg-white flex flex-col">
+        <div className="px-4 pt-4 pb-2 border-b">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Phone
+          </h2>
+        </div>
+        <div className="flex-1 px-4 py-4">
+          <PhoneSettingsSecondaryMenu />
+        </div>
+      </aside>
+
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
@@ -68,7 +121,7 @@ export default function PhoneSettingsPage() {
               </Card>
             )}
 
-            {!isLoading && !error && phoneNumbers && phoneNumbers.length > 0 && (
+            {!isLoading && !error && hasAnyNumbers && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">My Phone Numbers</h2>
@@ -77,8 +130,31 @@ export default function PhoneSettingsPage() {
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  {phoneNumbers.map((phoneNumber) => (
+                <div className="flex items-center justify-between mb-4">
+                  <Tabs
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                    className="w-full md:w-auto"
+                  >
+                    <TabsList className="grid grid-cols-3 w-full md:w-[320px]">
+                      <TabsTrigger value="all">All</TabsTrigger>
+                      <TabsTrigger value="active">Active</TabsTrigger>
+                      <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                {filteredPhoneNumbers.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6">
+                      <p className="text-sm text-muted-foreground">
+                        No phone numbers in this status.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredPhoneNumbers.map((phoneNumber) => (
                     <Card key={phoneNumber.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between gap-4">
@@ -92,20 +168,16 @@ export default function PhoneSettingsPage() {
                                   {phoneNumber.friendlyName || formatPhoneNumber(phoneNumber.phoneNumber)}
                                 </h3>
                                 <Badge
-                                  variant={
-                                    phoneNumber.status === "active"
-                                      ? "default"
-                                      : phoneNumber.status === "released"
-                                      ? "destructive"
-                                      : "secondary"
-                                  }
-                                  className={`text-xs ${
-                                    phoneNumber.status === "active"
-                                      ? "bg-green-100 text-green-700 border-green-200"
-                                      : ""
-                                  }`}
+                                  variant="default"
+                                  className={`text-xs ${getStatusBadgeClasses(phoneNumber.status)}`}
                                 >
                                   {phoneNumber.status}
+                                </Badge>
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-blue-100 text-blue-700 border-blue-200"
+                                >
+                                  {getTypeBadgeLabel(phoneNumber)}
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-4 mt-1">
@@ -140,12 +212,13 @@ export default function PhoneSettingsPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {!isLoading && !error && phoneNumbers && phoneNumbers.length === 0 && (
+            {!isLoading && !error && !hasAnyNumbers && (
               <PhoneNumbersEmptyState
                 onAddPhoneNumber={() => setIsDialogOpen(true)}
               />

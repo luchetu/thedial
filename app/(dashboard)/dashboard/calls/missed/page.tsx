@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { CallLogsList } from "@/components/dashboard/CallLogsList";
 
 export default function MissedCallsPage() {
   return (
@@ -24,8 +25,15 @@ export default function MissedCallsPage() {
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <h1 className="text-lg font-semibold">Missed Calls</h1>
-          <div className="flex-1" />
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight">Missed Calls</h1>
+              <span className="text-muted-foreground">|</span>
+              <p className="text-sm text-muted-foreground">
+                Calls you missed and may want to return
+              </p>
+            </div>
+          </div>
         </header>
         
         {/* Content */}
@@ -34,10 +42,10 @@ export default function MissedCallsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Missed Calls</CardTitle>
-                <CardDescription>Calls you missed and need to return</CardDescription>
+                <CardDescription>Review and follow up on missed calls</CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Missed calls interface coming soon...</p>
+              <CardContent className="pt-0">
+                <CallLogsList initialFilter="missed" />
               </CardContent>
             </Card>
           </div>

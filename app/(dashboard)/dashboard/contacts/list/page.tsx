@@ -61,7 +61,7 @@ export default function ContactsListPage() {
 
   const handleCall = (contact: Contact) => {
     // Navigate to dial page with contact pre-filled
-    router.push(`/dashboard/calls/dial?contact=${contact.id}`);
+    router.push(`/dashboard/dial?contact=${contact.id}`);
   };
 
   return (

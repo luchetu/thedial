@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm, Form, FormSubmitButton } from "@/lib/forms";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +19,33 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { JsonEditor } from "@/components/ui/json-editor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { countryCodes } from "@/lib/constants/countryCodes";
 import type { RoutingProfile } from "@/features/admin/telephony/types";
+
+// Regions have been removed from routing profiles; country is now the sole
+// location selector. Plan-level routing profile mappings can still use
+// regions independently of individual profiles.
+
+// Common telephony providers
+// NOTE: For The Dial, PSTN connectivity is handled via Twilio trunks that are
+// attached to LiveKit outbound/inbound trunks. Routing profiles should point
+// at LiveKit (or a custom provider), not directly at Twilio.
+const telephonyProviders = [
+  { value: "livekit", label: "LiveKit" },
+  { value: "custom", label: "Custom" },
+];
 
 interface RoutingProfileFormValues extends Record<string, unknown> {
   name: string;
   planCode?: string; // Optional - for convenience mapping
   country?: string; // Make optional if region is provided
-  region?: string; // Add region field
   outboundProvider: string;
   outboundTrunkRef: string;
   outboundProviderConfig: string;
@@ -44,7 +63,6 @@ export interface RoutingProfileFormSubmission {
   name: string;
   planCode?: string; // Optional - if provided, creates mapping automatically
   country?: string; // Make optional if region is provided
-  region?: string; // Add region support
   outboundProvider: string;
   outboundTrunkRef?: string;
   outboundProviderConfig?: Record<string, unknown>;
@@ -87,6 +105,13 @@ const jsonValidator = ({ value }: { value: unknown }) => {
   }
 };
 
+const normalizeCountryCode = (raw: unknown) => {
+  const text = String(raw || "").toUpperCase();
+  const cleaned = text.replace(/[^A-Z]/g, "");
+  if (!cleaned) return undefined;
+  return cleaned.slice(0, 2);
+};
+
 const normalizeString = (value: unknown) => {
   const stringValue = typeof value === "string" ? value : "";
   const trimmed = stringValue.trim();
@@ -108,10 +133,6 @@ const parseJsonObject = (value: string, fieldLabel: string) => {
   }
 };
 
-const toCountryFlag = (code: string) => {
-  const country = countryCodes.find((entry) => entry.code === code.toUpperCase());
-  return country?.flag ? `${country.flag} ${country.code}` : code.toUpperCase();
-};
 
 export const RoutingProfileForm = ({
   profile,
@@ -129,17 +150,12 @@ export const RoutingProfileForm = ({
   const [inboundTrunkPopoverOpen, setInboundTrunkPopoverOpen] = useState(false);
   const [dispatchRulePopoverOpen, setDispatchRulePopoverOpen] = useState(false);
 
-  const isoCountrySet = useMemo(
-    () => new Set(countryCodes.map((country) => country.code)),
-    []
-  );
 
   const form = useForm<RoutingProfileFormValues>({
     defaultValues: {
       name: profile?.name ?? "",
       planCode: "", // Optional - removed from profile type
       country: profile?.country ?? "",
-      region: profile?.region ?? "",
       outboundProvider: profile?.outboundProvider ?? "",
       outboundTrunkRef: profile?.outboundTrunkRef ?? "",
       outboundProviderConfig: profile?.outboundProviderConfig
@@ -168,22 +184,15 @@ export const RoutingProfileForm = ({
 
         const name = values.name.trim();
         const planCode = values.planCode?.trim().toUpperCase() || undefined;
-        const country = values.country?.trim().toUpperCase() || undefined;
-        const region = values.region?.trim() || undefined;
+        const country = normalizeCountryCode(values.country);
         const outboundProvider = values.outboundProvider.trim();
 
         if (!name) {
           throw new Error("Routing profile name is required");
         }
-        // Validation: either country OR region must be set (not both, not neither)
-        if (!country && !region) {
-          throw new Error("Either country or region must be provided");
-        }
-        if (country && region) {
-          throw new Error("Cannot specify both country and region - choose one");
-        }
-        if (country && !isoCountrySet.has(country)) {
-          throw new Error("Country must be a valid ISO-2 code");
+        // Location validation: routing profiles are now country-based only
+        if (!country) {
+          throw new Error("Country is required");
         }
         if (!outboundProvider) {
           throw new Error("Outbound provider is required");
@@ -193,7 +202,6 @@ export const RoutingProfileForm = ({
           name,
           planCode,
           country,
-          region,
           outboundProvider,
           outboundTrunkRef: normalizeString(values.outboundTrunkRef),
           outboundProviderConfig: parseJsonObject(
@@ -235,6 +243,7 @@ export const RoutingProfileForm = ({
   return (
     <Form<RoutingProfileFormValues> onSubmit={() => form.handleSubmit()}>
       <div className="space-y-8">
+        {/* Basic Information */}
         <div className="grid gap-6 md:grid-cols-2">
           <form.Field
             name="name"
@@ -285,9 +294,6 @@ export const RoutingProfileForm = ({
               return (
                 <div className="space-y-2">
                   <Label htmlFor="routingProfilePlanCode">Plan code (optional)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    If provided, creates a mapping automatically
-                  </p>
                   <Popover open={planCodePopoverOpen} onOpenChange={setPlanCodePopoverOpen}>
                     <PopoverAnchor asChild>
                       <div className="relative">
@@ -357,6 +363,9 @@ export const RoutingProfileForm = ({
                       </Command>
                     </PopoverContent>
                   </Popover>
+                  <p className="text-xs text-muted-foreground">
+                    If provided, creates a mapping automatically
+                  </p>
                   {selectedPlan && (
                     <Button
                       type="button"
@@ -385,74 +394,93 @@ export const RoutingProfileForm = ({
             name="country"
             validators={{
               onChange: ({ value }) => {
-                const text = String(value || "").trim().toUpperCase();
-                // Basic validation - cross-field validation happens in onSubmit
-                if (text && text.length !== 2) return "Country must be ISO-2";
-                if (text && !isoCountrySet.has(text)) return "Unknown country code";
+                const code = normalizeCountryCode(value);
+                // Basic validation - only check ISO-2 format when something is set
+                if (code && code.length !== 2) {
+                  return "Country must be ISO-2 format (2 characters)";
+                }
                 return undefined;
               },
             }}
           >
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="routingProfileCountry">Country (optional if region provided)</Label>
-                <Input
-                  id="routingProfileCountry"
-                  value={String(field.state.value || "")}
-                  onChange={(event) => field.handleChange(event.target.value.toUpperCase())}
-                  onBlur={field.handleBlur}
-                  placeholder="US"
-                  autoComplete="off"
-                />
-                {(() => {
-                  const countryValue = String(field.state.value || "").trim();
-                  return countryValue ? (
-                    <p className="text-xs text-muted-foreground">
-                      {toCountryFlag(countryValue)}
+            {(field) => {
+              const currentValue = String(field.state.value || "").toUpperCase();
+              const selectedCountry = countryCodes.find(
+                (country) => country.code.toUpperCase() === currentValue
+              );
+
+              return (
+                <div className="space-y-2">
+                  <Label htmlFor="routingProfileCountry">Country (optional if region provided)</Label>
+                  <Popover>
+                    <PopoverAnchor asChild>
+                      <div className="relative">
+                        <Input
+                          id="routingProfileCountry"
+                          value={
+                            selectedCountry
+                              ? `${selectedCountry.flag || ""} ${selectedCountry.name} (${selectedCountry.code})`
+                              : currentValue
+                          }
+                          onChange={(event) => {
+                            // Allow manual entry but keep only the normalized ISO-2 code in state
+                            const code = normalizeCountryCode(event.target.value);
+                            field.handleChange(code ?? "");
+                          }}
+                          onFocus={(event) => {
+                            // When focusing, open the command list via click on anchor
+                            event.currentTarget.click();
+                          }}
+                          placeholder="Select or type country code"
+                          className={selectedCountry ? "cursor-pointer" : "uppercase"}
+                        />
+                      </div>
+                    </PopoverAnchor>
+                    <PopoverContent
+                      className="w-[calc(100vw-2rem)] sm:w-[400px] p-0"
+                      align="start"
+                    >
+                      <Command>
+                        <CommandInput placeholder="Search countries..." />
+                        <CommandList>
+                          <CommandEmpty>No country found.</CommandEmpty>
+                          <CommandGroup>
+                            {countryCodes.map((country) => (
+                              <CommandItem
+                                key={country.code}
+                                value={`${country.code} ${country.name}`}
+                                onSelect={() => {
+                                  field.handleChange(country.code.toUpperCase());
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {country.flag && <span>{country.flag}</span>}
+                                  <span>{country.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    ({country.code})
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {!field.state.meta.isValid && (
+                    <p className="text-xs text-destructive" role="alert">
+                      {field.state.meta.errors.join(", ")}
                     </p>
-                  ) : null;
-                })()}
-                {!field.state.meta.isValid && (
-                  <p className="text-xs text-destructive" role="alert">
-                    {field.state.meta.errors.join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field
-            name="region"
-            validators={{
-              onChange: () => {
-                // Basic validation - cross-field validation happens in onSubmit
-                return undefined;
-              },
+                  )}
+                </div>
+              );
             }}
-          >
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="routingProfileRegion">Region (optional if country provided)</Label>
-                <Input
-                  id="routingProfileRegion"
-                  value={String(field.state.value || "")}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="US, CA, EU, etc."
-                  autoComplete="off"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Optional region code (e.g., US, CA, EU). Cannot be used with country.
-                </p>
-                {!field.state.meta.isValid && (
-                  <p className="text-xs text-destructive" role="alert">
-                    {field.state.meta.errors.join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
           </form.Field>
 
+        </div>
+
+        {/* Outbound Configuration */}
+        <div className="grid gap-6 md:grid-cols-2">
           <form.Field
             name="outboundProvider"
             validators={{
@@ -467,14 +495,21 @@ export const RoutingProfileForm = ({
             {(field) => (
               <div className="space-y-2">
                 <Label htmlFor="outboundProvider">Outbound provider</Label>
-                <Input
-                  id="outboundProvider"
-                  value={String(field.state.value || "")}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="livekit"
-                  autoComplete="off"
-                />
+                <Select
+                  value={String(field.state.value || "") || undefined}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+                  <SelectTrigger id="outboundProvider" className="w-full">
+                    <SelectValue placeholder="Select outbound provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {telephonyProviders.map((provider) => (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {!field.state.meta.isValid && (
                   <p className="text-xs text-destructive" role="alert">
                     {field.state.meta.errors.join(", ")}
@@ -483,9 +518,7 @@ export const RoutingProfileForm = ({
               </div>
             )}
           </form.Field>
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
           <form.Field name="outboundTrunkRef">
             {(field) => {
               const currentValue = String(field.state.value || "");
@@ -592,14 +625,21 @@ export const RoutingProfileForm = ({
             {(field) => (
               <div className="space-y-2">
                 <Label htmlFor="inboundProvider">Inbound provider</Label>
-                <Input
-                  id="inboundProvider"
-                  value={String(field.state.value || "")}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="twilio"
-                  autoComplete="off"
-                />
+                <Select
+                  value={String(field.state.value || "") || undefined}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+                  <SelectTrigger id="inboundProvider" className="w-full">
+                    <SelectValue placeholder="Select inbound provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {telephonyProviders.map((provider) => (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
                   Optional provider to receive inbound calls.
                 </p>
@@ -712,14 +752,21 @@ export const RoutingProfileForm = ({
             {(field) => (
               <div className="space-y-2">
                 <Label htmlFor="dispatchProvider">Dispatch provider</Label>
-                <Input
-                  id="dispatchProvider"
-                  value={String(field.state.value || "")}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="livekit"
-                  autoComplete="off"
-                />
+                <Select
+                  value={String(field.state.value || "") || undefined}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+                  <SelectTrigger id="dispatchProvider" className="w-full">
+                    <SelectValue placeholder="Select dispatch provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {telephonyProviders.map((provider) => (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </form.Field>
@@ -776,7 +823,7 @@ export const RoutingProfileForm = ({
                       }}
                     >
                       <Command>
-                        <CommandInput placeholder="Search dispatch rules..." />
+                        <CommandInput placeholder="Search SIP dispatch rules..." />
                         <CommandList>
                           <CommandEmpty>No rule found.</CommandEmpty>
                           <CommandGroup>
@@ -877,7 +924,7 @@ export const RoutingProfileForm = ({
               )}
             </form.Field>
             <p className="text-xs text-muted-foreground">
-              Attach metadata that LiveKit dispatch rules can use to route calls.
+              Attach metadata that LiveKit SIP dispatch rules can use to route calls.
             </p>
           </div>
 

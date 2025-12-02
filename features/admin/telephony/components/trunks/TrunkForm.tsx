@@ -122,6 +122,7 @@ export function TrunkForm({
               isEditMode={isEditMode || mode === "edit" || mode === "configuration-only"}
               twilioTrunkSid={twilioTrunkSid}
               existingCredentialListSid={existingCredentialListSid}
+              trunkId={undefined}
             />
           </div>
         )}
