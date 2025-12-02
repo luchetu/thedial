@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useQueryState } from "nuqs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { CallInterface } from "@/components/livekit/CallInterface";
 import { OutboundCallDialer } from "@/components/livekit/OutboundCallDialer";
 
-function DialContent() {
+export default function DialPage() {
   const [activeCall, setActiveCall] = useState<{ roomName: string; identity: string; callerNumber?: string; callerName?: string } | null>(null);
-  const searchParams = useSearchParams();
-  const contactId = searchParams.get("contact");
+  const [contactId] = useQueryState("contact");
 
   return (
     <SidebarInset className="bg-muted/30">
@@ -40,7 +39,7 @@ function DialContent() {
               <CardContent>
                 <OutboundCallDialer 
                   onCallStart={setActiveCall}
-                  contactId={contactId || undefined}
+                  contactId={contactId ?? undefined}
                   activeCall={activeCall}
                 />
               </CardContent>
@@ -63,20 +62,6 @@ function DialContent() {
         />
       )}
     </SidebarInset>
-  );
-}
-
-export default function DialPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex h-screen">
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    }>
-      <DialContent />
-    </Suspense>
   );
 }
 
