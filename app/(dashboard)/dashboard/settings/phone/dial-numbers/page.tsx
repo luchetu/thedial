@@ -22,7 +22,11 @@ export default function DialNumbersPage() {
 
   const dialNumbers =
     phoneNumbers?.filter(
-      (pn) => pn.twilioSid && !pn.twilioSid.startsWith("non-twilio-")
+      (pn) => {
+        // Use provider field if available, otherwise fall back to twilioSid check
+        const provider = pn.provider || (pn.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
+        return provider === "twilio" || provider === "vonage" || provider === "livekit"; // Add other dial-capable providers
+      }
     ) ?? [];
 
   const formatPhoneNumber = (phone: string) => {

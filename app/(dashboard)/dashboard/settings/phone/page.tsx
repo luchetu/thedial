@@ -65,8 +65,9 @@ export default function PhoneSettingsPage() {
   const hasAnyNumbers = (phoneNumbers?.length ?? 0) > 0;
 
   const getTypeBadgeLabel = (phoneNumber: UserPhoneNumber) => {
-    const sid = phoneNumber.twilioSid || "";
-    const isDial = sid && !sid.startsWith("non-twilio-");
+    // Use provider field if available, otherwise fall back to twilioSid check
+    const provider = phoneNumber.provider || (phoneNumber.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
+    const isDial = provider === "twilio" || provider === "vonage" || provider === "livekit"; // Add other dial-capable providers
     return isDial ? "Dial" : "Caller ID";
   };
 

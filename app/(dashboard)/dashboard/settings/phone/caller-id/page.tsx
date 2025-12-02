@@ -19,10 +19,17 @@ export default function CallerIdNumbersPage() {
   const { data: phoneNumbers, isLoading, error } = useUserPhoneNumbers();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const callerIdNumbers =
-    phoneNumbers?.filter(
-      (pn) => !pn.twilioSid || pn.twilioSid.startsWith("non-twilio-")
-    ) ?? [];
+  const callerIdNumbers = useMemo(
+    () =>
+      phoneNumbers?.filter(
+        (pn) => {
+          // Use provider field if available, otherwise fall back to twilioSid check
+          const provider = pn.provider || (pn.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
+          return provider === "sms-verified" || !provider;
+        }
+      ) ?? [],
+    [phoneNumbers]
+  );
 
   const formatPhoneNumber = (phone: string) => {
     if (phone.startsWith("+1") && phone.length === 12) {
