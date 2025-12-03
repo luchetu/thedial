@@ -338,75 +338,75 @@ export function deleteTwilioOriginationURL(trunkSid: string, originationUrlSid: 
 
 // Outbound Trunks
 export function getOutboundTrunks() {
-  return http<OutboundTrunk[]>(`/admin/settings/livekit/trunks/outbound`);
+  return http<OutboundTrunk[]>(`/admin/settings/trunks/outbound`);
 }
 
 export function createOutboundTrunk(data: CreateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/livekit/trunks/outbound`, {
+  return http<OutboundTrunk>(`/admin/settings/trunks/outbound`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateOutboundTrunk(id: string, data: UpdateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/livekit/trunks/outbound/${id}`, {
+  return http<OutboundTrunk>(`/admin/settings/trunks/outbound/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteOutboundTrunk(id: string) {
-  return http<void>(`/admin/settings/livekit/trunks/outbound/${id}`, {
+  return http<void>(`/admin/settings/trunks/outbound/${id}`, {
     method: "DELETE",
   });
 }
 
 // Inbound Trunks
 export function getInboundTrunks() {
-  return http<InboundTrunk[]>(`/admin/settings/livekit/trunks/inbound`);
+  return http<InboundTrunk[]>(`/admin/settings/trunks/inbound`);
 }
 
 export function createInboundTrunk(data: CreateInboundTrunkRequest) {
-  return http<InboundTrunk>(`/admin/settings/livekit/trunks/inbound`, {
+  return http<InboundTrunk>(`/admin/settings/trunks/inbound`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateInboundTrunk(id: string, data: UpdateInboundTrunkRequest) {
-  return http<InboundTrunk>(`/admin/settings/livekit/trunks/inbound/${id}`, {
+  return http<InboundTrunk>(`/admin/settings/trunks/inbound/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteInboundTrunk(id: string) {
-  return http<void>(`/admin/settings/livekit/trunks/inbound/${id}`, {
+  return http<void>(`/admin/settings/trunks/inbound/${id}`, {
     method: "DELETE",
   });
 }
 
 // Dispatch Rules
 export function getDispatchRules() {
-  return http<DispatchRule[]>(`/admin/settings/livekit/dispatch-rules`);
+  return http<DispatchRule[]>(`/admin/settings/dispatch-rules`);
 }
 
 export function createDispatchRule(data: CreateDispatchRuleRequest) {
-  return http<DispatchRule>(`/admin/settings/livekit/dispatch-rules`, {
+  return http<DispatchRule>(`/admin/settings/dispatch-rules`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateDispatchRule(id: string, data: UpdateDispatchRuleRequest) {
-  return http<DispatchRule>(`/admin/settings/livekit/dispatch-rules/${id}`, {
+  return http<DispatchRule>(`/admin/settings/dispatch-rules/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteDispatchRule(id: string) {
-  return http<void>(`/admin/settings/livekit/dispatch-rules/${id}`, {
+  return http<void>(`/admin/settings/dispatch-rules/${id}`, {
     method: "DELETE",
   });
 }

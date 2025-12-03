@@ -3,28 +3,28 @@ import type { LiveKitTokenResponse, LiveKitRoom, CreateOutboundCallRequest, Outb
 
 export function getLiveKitToken(room: string, identity: string) {
   const params = new URLSearchParams({ room, identity });
-  return http<LiveKitTokenResponse>(`/livekit/token?${params.toString()}`);
+  return http<LiveKitTokenResponse>(`/calls/token?${params.toString()}`);
 }
 
 export function createRoom(name: string) {
-  return http<LiveKitRoom>(`/livekit/rooms/create`, {
+  return http<LiveKitRoom>(`/calls/rooms`, {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function listRooms() {
-  return http<LiveKitRoom[]>(`/livekit/rooms`);
+  return http<LiveKitRoom[]>(`/calls/rooms`);
 }
 
 export function deleteRoom(room: string) {
-  return http<void>(`/livekit/rooms/${room}`, {
+  return http<void>(`/calls/rooms/${room}`, {
     method: "DELETE",
   });
 }
 
 export function createOutboundCall(input: CreateOutboundCallRequest) {
-  return http<OutboundCallResponse>(`/livekit/calls/outbound`, {
+  return http<OutboundCallResponse>(`/calls/outbound`, {
     method: "POST",
     body: JSON.stringify(input),
   });
