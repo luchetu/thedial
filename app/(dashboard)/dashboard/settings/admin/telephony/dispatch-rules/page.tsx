@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Route } from "lucide-react";
 import type { DispatchRule } from "@/features/admin/telephony/types";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
@@ -94,23 +96,26 @@ export default function DispatchRulesPage() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="SIP Dispatch Rules"
-          icon={Route}
-          action={
-            <Button
-              variant="secondary"
-              className="flex items-center gap-2 text-white"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              Create new
-            </Button>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          <div className="p-6">
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <Route className="h-6 w-6" />
+                  SIP Dispatch Rules
+                </h1>
+              </div>
+              <Button onClick={() => setIsCreateDialogOpen(true)} variant="secondary" className="flex items-center gap-2">
+                <Route className="h-4 w-4" />
+                Create Dispatch Rule
+              </Button>
+            </div>
             {/* Summary Statistics */}
             <StatsGrid
               stats={[

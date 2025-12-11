@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { contactsKeys } from "@/features/contacts/queryKeys";
 import type { CreateContactRequest } from "@/features/contacts/types";
 import { useRouter } from "next/navigation";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 type ImportSource = "google" | "outlook" | "salesforce" | "generic";
 
@@ -152,10 +153,10 @@ export default function ContactsImportPage() {
         nameIndex = headersLower.findIndex(h => h === "name");
         if (nameIndex === -1) {
           // Try "First Name" and "Last Name" (most common in Google exports)
-          const firstNameIndex = headersLower.findIndex(h => 
+          const firstNameIndex = headersLower.findIndex(h =>
             h.includes("first name") || h === "firstname"
           );
-          const lastNameIndex = headersLower.findIndex(h => 
+          const lastNameIndex = headersLower.findIndex(h =>
             h.includes("last name") || h === "lastname"
           );
           if (firstNameIndex !== -1 || lastNameIndex !== -1) {
@@ -169,23 +170,23 @@ export default function ContactsImportPage() {
             }
           }
         }
-        phoneIndex = headersLower.findIndex(h => 
+        phoneIndex = headersLower.findIndex(h =>
           h.includes("phone") && h.includes("value")
         );
         break;
 
       case "outlook":
         // Outlook: "First Name", "Last Name", "Business Phone", "Home Phone", "Mobile Phone"
-        const firstNameIndex = headersLower.findIndex(h => 
+        const firstNameIndex = headersLower.findIndex(h =>
           h.includes("first name") || h === "firstname"
         );
-        const lastNameIndex = headersLower.findIndex(h => 
+        const lastNameIndex = headersLower.findIndex(h =>
           h.includes("last name") || h === "lastname"
         );
         if (firstNameIndex !== -1 || lastNameIndex !== -1) {
           nameIndex = firstNameIndex !== -1 ? firstNameIndex : lastNameIndex;
         }
-        phoneIndex = headersLower.findIndex(h => 
+        phoneIndex = headersLower.findIndex(h =>
           (h.includes("phone") && !h.includes("fax")) ||
           h.includes("mobile") ||
           h.includes("business phone") ||
@@ -195,17 +196,17 @@ export default function ContactsImportPage() {
 
       case "salesforce":
         // Salesforce: "First Name", "Last Name", "Phone", "Mobile Phone"
-        const sfFirstNameIndex = headersLower.findIndex(h => 
+        const sfFirstNameIndex = headersLower.findIndex(h =>
           h.includes("first name") || h === "firstname"
         );
-        const sfLastNameIndex = headersLower.findIndex(h => 
+        const sfLastNameIndex = headersLower.findIndex(h =>
           h.includes("last name") || h === "lastname"
         );
         if (sfFirstNameIndex !== -1 || sfLastNameIndex !== -1) {
           nameIndex = sfFirstNameIndex !== -1 ? sfFirstNameIndex : sfLastNameIndex;
         }
-        phoneIndex = headersLower.findIndex(h => 
-          h === "phone" || 
+        phoneIndex = headersLower.findIndex(h =>
+          h === "phone" ||
           h.includes("mobile") ||
           h.includes("phone number")
         );
@@ -213,12 +214,20 @@ export default function ContactsImportPage() {
 
       case "generic":
       default:
-        nameIndex = headersLower.findIndex(h => h === 'name');
-        phoneIndex = headersLower.findIndex(h => 
-          h === 'phone' || 
-          h === 'phone_number' || 
+        nameIndex = headersLower.findIndex(h => h === 'name' || h === 'full name' || h === 'fullname' || h === 'contact name');
+
+        if (nameIndex === -1) {
+          nameIndex = headersLower.findIndex(h => h.includes('first') && h.includes('name'));
+        }
+
+        phoneIndex = headersLower.findIndex(h =>
+          h === 'phone' ||
+          h === 'phone_number' ||
           h === 'phonenumber' ||
-          h.includes('phone')
+          h === 'mobile' ||
+          h === 'cell' ||
+          h.includes('phone') ||
+          h.includes('mobile')
         );
         break;
     }
@@ -255,10 +264,10 @@ export default function ContactsImportPage() {
             name = values[nameColumnIndex];
           } else {
             // Try "First Name" + "Last Name"
-            const firstNameIndex = headersLower.findIndex(h => 
+            const firstNameIndex = headersLower.findIndex(h =>
               h.includes("first name") || h === "firstname"
             );
-            const lastNameIndex = headersLower.findIndex(h => 
+            const lastNameIndex = headersLower.findIndex(h =>
               h.includes("last name") || h === "lastname"
             );
             if (firstNameIndex !== -1 || lastNameIndex !== -1) {
@@ -277,16 +286,29 @@ export default function ContactsImportPage() {
           break;
         case "outlook":
         case "salesforce":
-          const firstName = values[headersLower.findIndex(h => 
+          const firstName = values[headersLower.findIndex(h =>
             h.includes("first name") || h === "firstname"
           )] || '';
-          const lastName = values[headersLower.findIndex(h => 
+          const lastName = values[headersLower.findIndex(h =>
             h.includes("last name") || h === "lastname"
           )] || '';
           name = `${firstName} ${lastName}`.trim() || values[nameIndex] || '';
           break;
         default:
-          name = values[nameIndex] || '';
+          {
+            const genFirstIdx = headersLower.findIndex(h => h.includes('first') && h.includes('name'));
+            const genLastIdx = headersLower.findIndex(h => h.includes('last') && h.includes('name'));
+
+            if (genFirstIdx !== -1 && (headersLower[nameIndex].includes('first') || !values[nameIndex])) {
+              const f = values[genFirstIdx] || '';
+              const l = (genLastIdx !== -1) ? (values[genLastIdx] || '') : '';
+              name = `${f} ${l}`.trim();
+            }
+
+            if (!name) {
+              name = values[nameIndex] || '';
+            }
+          }
           break;
       }
 
@@ -294,8 +316,8 @@ export default function ContactsImportPage() {
       phone = values[phoneIndex] || '';
       if (!phone || phone === '') {
         // Try alternative phone columns
-        const altPhoneIndex = headersLower.findIndex((h, idx) => 
-          idx !== phoneIndex && 
+        const altPhoneIndex = headersLower.findIndex((h, idx) =>
+          idx !== phoneIndex &&
           (h.includes("phone") || h.includes("mobile")) &&
           !h.includes("fax")
         );
@@ -371,7 +393,7 @@ export default function ContactsImportPage() {
 
       // Refresh contacts list
       queryClient.invalidateQueries({ queryKey: contactsKeys.all });
-      
+
       // Clear file selection
       setSelectedFile(null);
       setSelectedSource(null);
@@ -411,7 +433,7 @@ export default function ContactsImportPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFileSelect(file);
@@ -437,16 +459,17 @@ export default function ContactsImportPage() {
           <ContactsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <h1 className="text-lg font-semibold">Upload Contacts</h1>
+          <PageBreadcrumb />
+
           <div className="flex-1" />
         </header>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
@@ -461,13 +484,12 @@ export default function ContactsImportPage() {
                 <h3 className="text-lg font-medium">Select Import Source</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   {importSources.map((source) => (
-                    <Card 
-                      key={source.id} 
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedSource === source.id
-                          ? "ring-2 ring-primary"
-                          : ""
-                      }`}
+                    <Card
+                      key={source.id}
+                      className={`cursor-pointer transition-all hover:shadow-md ${selectedSource === source.id
+                        ? "ring-2 ring-primary"
+                        : ""
+                        }`}
                       onClick={() => handleSourceSelect(source.id)}
                     >
                       <CardContent className="p-4">
@@ -497,7 +519,7 @@ export default function ContactsImportPage() {
                     Upload CSV File
                   </CardTitle>
                   <CardDescription>
-                    {selectedSource 
+                    {selectedSource
                       ? `Upload your ${importSources.find(s => s.id === selectedSource)?.name} CSV export`
                       : "Please select an import source above"}
                   </CardDescription>
@@ -507,11 +529,10 @@ export default function ContactsImportPage() {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      isDragging
-                        ? "border-primary bg-primary/5"
-                        : "border-muted-foreground/25"
-                    }`}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
+                      ? "border-primary bg-primary/5"
+                      : "border-muted-foreground/25"
+                      }`}
                   >
                     <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-4">
@@ -565,11 +586,10 @@ export default function ContactsImportPage() {
                   )}
 
                   {importResult && (
-                    <div className={`mt-4 p-3 border rounded-lg ${
-                      importResult.success
-                        ? "bg-green-50 border-green-200"
-                        : "bg-yellow-50 border-yellow-200"
-                    }`}>
+                    <div className={`mt-4 p-3 border rounded-lg ${importResult.success
+                      ? "bg-green-50 border-green-200"
+                      : "bg-yellow-50 border-yellow-200"
+                      }`}>
                       <div className="flex items-center gap-2">
                         {importResult.success ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />

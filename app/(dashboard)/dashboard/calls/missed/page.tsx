@@ -5,6 +5,7 @@ import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CallLogsList } from "@/components/dashboard/CallLogsList";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function MissedCallsPage() {
   return (
@@ -19,36 +20,28 @@ export default function MissedCallsPage() {
           <CallsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight">Missed Calls</h1>
-              <span className="text-muted-foreground">|</span>
-              <p className="text-sm text-muted-foreground">
-                Calls you missed and may want to return
-              </p>
-            </div>
-          </div>
+          <PageBreadcrumb />
         </header>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Missed Calls</CardTitle>
-                <CardDescription>Review and follow up on missed calls</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <CallLogsList initialFilter="missed" />
-              </CardContent>
-            </Card>
+
+        {/* Fixed Title Section */}
+        <div className="flex-none px-6 pt-6 pb-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Missed Calls</h1>
+            <p className="text-sm text-muted-foreground">
+              Calls you missed and may want to return
+            </p>
           </div>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 min-h-0 px-6 pb-6">
+          <CallLogsList initialFilter="missed" className="h-full" />
         </div>
       </div>
     </div>

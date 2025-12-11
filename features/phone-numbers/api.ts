@@ -107,6 +107,29 @@ export function releasePhoneNumber(id: string) {
   })
 }
 
+export interface UpdatePhoneNumberCapabilitiesInput {
+  capabilities: Record<string, unknown>
+}
+
+export function updatePhoneNumberCapabilities(
+  id: string,
+  capabilities: Record<string, unknown>
+) {
+  // Clean the capabilities object to remove undefined values and ensure it's JSON-serializable
+  const cleanCapabilities = JSON.parse(JSON.stringify(capabilities));
+  
+  // Backend expects capabilities as []byte, which in Go JSON decoding expects base64-encoded string
+  const capabilitiesJSON = JSON.stringify(cleanCapabilities);
+  const capabilitiesBase64 = btoa(capabilitiesJSON);
+  
+  return http<void>(`/phone-numbers/${id}/capabilities`, {
+    method: "POST",
+    body: JSON.stringify({ 
+      capabilities: capabilitiesBase64
+    }),
+  })
+}
+
 // Phone Number Verification APIs
 export interface InitiateVerificationInput {
   userId: string

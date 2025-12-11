@@ -17,9 +17,6 @@ import type {
   TwilioTrunk,
   CreateTwilioTrunkRequest,
   UpdateTwilioTrunkRequest,
-  OutboundTrunk,
-  CreateOutboundTrunkRequest,
-  UpdateOutboundTrunkRequest,
   InboundTrunk,
   CreateInboundTrunkRequest,
   UpdateInboundTrunkRequest,
@@ -332,31 +329,6 @@ export function updateTwilioOriginationURL(
 
 export function deleteTwilioOriginationURL(trunkSid: string, originationUrlSid: string) {
   return http<void>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
-    method: "DELETE",
-  });
-}
-
-// Outbound Trunks
-export function getOutboundTrunks() {
-  return http<OutboundTrunk[]>(`/admin/settings/trunks/outbound`);
-}
-
-export function createOutboundTrunk(data: CreateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/trunks/outbound`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export function updateOutboundTrunk(id: string, data: UpdateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/trunks/outbound/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-}
-
-export function deleteOutboundTrunk(id: string) {
-  return http<void>(`/admin/settings/trunks/outbound/${id}`, {
     method: "DELETE",
   });
 }

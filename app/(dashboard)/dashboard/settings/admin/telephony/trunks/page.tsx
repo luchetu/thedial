@@ -5,6 +5,8 @@ import { Phone, X } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { CreateButtonWithDropdown } from "@/components/ui/create-button-dropdown";
 import {
@@ -74,7 +76,7 @@ export default function TrunksPage() {
           inbound: query.data.inbound.length,
         };
       } else {
-      counts[trunk.id] = { outbound: 0, inbound: 0 };
+        counts[trunk.id] = { outbound: 0, inbound: 0 };
       }
     });
     return counts;
@@ -175,37 +177,43 @@ export default function TrunksPage() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Trunks"
-          icon={Phone}
-          action={
-            <CreateButtonWithDropdown
-              buttonText="Create Trunk"
-              options={[
-                {
-                  label: "Twilio",
-                  onClick: () => handleCreate("twilio"),
-                },
-                {
-                  label: "LiveKit Outbound",
-                  onClick: () => handleCreate("livekit_outbound"),
-                },
-                {
-                  label: "LiveKit Inbound",
-                  onClick: () => handleCreate("livekit_inbound"),
-                },
-                {
-                  label: "Custom",
-                  onClick: () => handleCreate("custom"),
-                },
-              ]}
-            />
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <Phone className="h-6 w-6" />
+                  Trunks
+                </h1>
+              </div>
+              <CreateButtonWithDropdown
+                buttonText="Create Trunk"
+                options={[
+                  {
+                    label: "Twilio",
+                    onClick: () => handleCreate("twilio"),
+                  },
+                  {
+                    label: "LiveKit Outbound",
+                    onClick: () => handleCreate("livekit_outbound"),
+                  },
+                  {
+                    label: "LiveKit Inbound",
+                    onClick: () => handleCreate("livekit_inbound"),
+                  },
+                  {
+                    label: "Custom",
+                    onClick: () => handleCreate("custom"),
+                  },
+                ]}
+              />
+            </div>
             <StatsGrid
               stats={[
                 { title: "Total trunks", value: summary.total },

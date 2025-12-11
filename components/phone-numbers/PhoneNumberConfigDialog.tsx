@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +22,9 @@ import {
   updatePhoneNumberStatus,
   releasePhoneNumber,
   getPhoneNumber,
+  updatePhoneNumberCapabilities,
 } from "@/features/phone-numbers/api";
-import type { UserPhoneNumber } from "@/features/phone-numbers/types";
+import type { UserPhoneNumber, PhoneNumberCapabilities } from "@/features/phone-numbers/types";
 import { toastError, toastSuccess } from "@/lib/toast";
 
 interface PhoneNumberConfigDialogProps {
@@ -45,6 +46,12 @@ export function PhoneNumberConfigDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  
+  // Call configuration state
+  const [participantName, setParticipantName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [krispEnabled, setKrispEnabled] = useState(true);
+  const [playDialtone, setPlayDialtone] = useState(true);
 
   // Load phone number details when dialog opens
   useEffect(() => {
@@ -58,6 +65,22 @@ export function PhoneNumberConfigDialog({
           setForwardingNumber(data.forwardingNumber || "");
           setAiAssistantEnabled(data.aiAssistantEnabled || false);
           setStatus(data.status || null);
+          
+          // Load call configuration from capabilities
+          const capabilities = data.capabilities as PhoneNumberCapabilities | undefined;
+          if (capabilities?.callConfig) {
+            const callConfig = capabilities.callConfig;
+            setParticipantName(callConfig.participantName || "");
+            setDisplayName(callConfig.displayName || "");
+            setKrispEnabled(callConfig.krispEnabled ?? true);
+            setPlayDialtone(callConfig.playDialtone ?? true);
+          } else {
+            // Set defaults
+            setParticipantName("");
+            setDisplayName("");
+            setKrispEnabled(true);
+            setPlayDialtone(true);
+          }
         })
         .catch((err) => {
           console.error("Failed to load phone number:", err);
@@ -99,6 +122,55 @@ export function PhoneNumberConfigDialog({
         updates.push(updatePhoneNumberStatus(phoneNumber.id, status));
       }
 
+      // Update call configuration in capabilities
+      const currentCapabilities = (phoneNumber.capabilities as PhoneNumberCapabilities) || {};
+      const currentCallConfig = currentCapabilities.callConfig || {};
+      
+      // Get current values (with defaults)
+      const currentParticipantName = currentCallConfig.participantName || "";
+      const currentDisplayName = currentCallConfig.displayName || "";
+      const currentKrispEnabled = currentCallConfig.krispEnabled ?? true;
+      const currentPlayDialtone = currentCallConfig.playDialtone ?? true;
+      
+      // Check if call config changed
+      const hasCallConfigChanges = 
+        participantName.trim() !== currentParticipantName ||
+        displayName.trim() !== currentDisplayName ||
+        krispEnabled !== currentKrispEnabled ||
+        playDialtone !== currentPlayDialtone;
+      
+      if (hasCallConfigChanges) {
+        // Build new call config (only include fields that are set or different from defaults)
+        const newCallConfig: Record<string, unknown> = {};
+        if (participantName.trim() !== "") {
+          newCallConfig.participantName = participantName.trim();
+        }
+        if (displayName.trim() !== "") {
+          newCallConfig.displayName = displayName.trim();
+        }
+        // Only include if different from default (true)
+        if (krispEnabled !== true) {
+          newCallConfig.krispEnabled = krispEnabled;
+        }
+        if (playDialtone !== true) {
+          newCallConfig.playDialtone = playDialtone;
+        }
+        
+        // Merge with existing capabilities
+        const updatedCapabilities: Record<string, unknown> = {
+          ...currentCapabilities,
+        };
+        
+        // Only set callConfig if it has values, otherwise remove it
+        if (Object.keys(newCallConfig).length > 0) {
+          updatedCapabilities.callConfig = newCallConfig;
+        } else {
+          delete updatedCapabilities.callConfig;
+        }
+        
+        updates.push(updatePhoneNumberCapabilities(phoneNumber.id, updatedCapabilities));
+      }
+
       if (updates.length > 0) {
         await Promise.all(updates);
       }
@@ -127,21 +199,21 @@ export function PhoneNumberConfigDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Configure Phone Number</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto sm:max-w-md pt-6 pl-6">
+        <SheetHeader>
+          <SheetTitle>Configure Phone Number</SheetTitle>
+          <SheetDescription>
             Update settings for {phoneNumber && formatPhoneNumber(phoneNumber.phoneNumber)}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 mt-6 pr-6 pb-8">
             <div className="space-y-2">
               <Label htmlFor="friendly-name">Friendly Name</Label>
               <Input
@@ -168,6 +240,74 @@ export function PhoneNumberConfigDialog({
                   checked={aiAssistantEnabled}
                   onCheckedChange={setAiAssistantEnabled}
                 />
+              </div>
+            </div>
+
+            {/* Call Configuration Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Call Configuration</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Configure how this phone number appears and behaves during outbound calls
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="participant-name">Participant Name</Label>
+                <Input
+                  id="participant-name"
+                  value={participantName}
+                  onChange={(e) => setParticipantName(e.target.value)}
+                  placeholder={phoneNumber?.phoneNumber || "Leave empty to use phone number"}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Custom name shown in the call room. Leave empty to use the phone number.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="display-name">Caller ID Display Name</Label>
+                <Input
+                  id="display-name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Leave empty for CNAM lookup"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Custom name shown on the recipient&apos;s caller ID. Leave empty to use provider CNAM lookup.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="krisp-enabled">Krisp Noise Suppression</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable noise suppression for better call quality
+                    </p>
+                  </div>
+                  <Switch
+                    id="krisp-enabled"
+                    checked={krispEnabled}
+                    onCheckedChange={setKrispEnabled}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="play-dialtone">Play Dial Tone</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Play dial tone audio while the call is connecting
+                    </p>
+                  </div>
+                  <Switch
+                    id="play-dialtone"
+                    checked={playDialtone}
+                    onCheckedChange={setPlayDialtone}
+                  />
+                </div>
               </div>
             </div>
 
@@ -283,8 +423,8 @@ export function PhoneNumberConfigDialog({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

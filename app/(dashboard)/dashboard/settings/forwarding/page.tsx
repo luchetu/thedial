@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SettingsSecondaryMenu } from "@/components/settings-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function ForwardingSettingsPage() {
   return (
@@ -16,15 +17,16 @@ export default function ForwardingSettingsPage() {
           <SettingsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <div className="flex-1" />
         </header>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
@@ -33,7 +35,7 @@ export default function ForwardingSettingsPage() {
                 <h2 className="text-xl font-semibold mb-2">Call Forwarding</h2>
                 <p className="text-muted-foreground">Set up call forwarding rules and preferences</p>
               </div>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Call Forwarding Settings</CardTitle>

@@ -5,6 +5,8 @@ import { Key } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { StatsGrid } from "@/components/ui/stat-card";
@@ -144,19 +146,26 @@ export default function CredentialListsPage() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Credential Lists"
-          icon={Key}
-          action={
-            <Button variant="secondary" onClick={handleCreate} className="flex items-center gap-2">
-              Create Credential List
-            </Button>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <Key className="h-6 w-6" />
+                  Credential Lists
+                </h1>
+              </div>
+              <Button onClick={handleCreate} variant="secondary" className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Create List
+              </Button>
+            </div>
             {error ? (
               <div className="flex items-center justify-center p-6 text-sm text-destructive">
                 {error?.message || "Failed to load credential lists."}
@@ -165,8 +174,8 @@ export default function CredentialListsPage() {
               <>
                 <StatsGrid
                   stats={[
-                    { 
-                      title: "Total credential lists", 
+                    {
+                      title: "Total credential lists",
                       value: summary.total,
                       customValue: summary.total === 0 ? (
                         <span className="text-xs font-semibold text-muted-foreground">None</span>

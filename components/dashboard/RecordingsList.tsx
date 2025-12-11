@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,7 +43,7 @@ const recordingsData: Recording[] = [
   },
   {
     id: "2",
-    callId: "call_002", 
+    callId: "call_002",
     duration: "00:01:45",
     timestamp: "2024-01-15 13:15:10",
     phoneNumber: "+1 (555) 987-6543",
@@ -89,14 +90,49 @@ const directionConfig: Record<string, { label: string; color: string }> = {
   outbound: { label: "Outbound", color: "text-green-600" }
 }
 
-export function RecordingsList() {
+import { useUserCalls } from "@/features/calls/hooks";
+import { Loader2 } from "lucide-react";
+
+export function RecordingsList({ className }: { className?: string }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
-  const [recordings, setRecordings] = useState(recordingsData)
 
+  // Fetch calls from API
+  const { data: calls, isLoading } = useUserCalls({ limit: 100 });
+
+  // Transform API data to UI model
+  const recordings: Recording[] = (calls || [])
+    .filter(call => call.recordingUrl && call.recordingUrl.length > 0)
+    .map(call => ({
+      id: call.id,
+      callId: call.id,
+      duration: formatDuration(call.durationSeconds || 0),
+      timestamp: formatTimestamp(call.startedAt),
+      phoneNumber: call.sourceE164 || call.destinationE164 || "Unknown",
+      direction: (call.direction as "inbound" | "outbound") || "outbound",
+      // Map metadata fields if available
+      transcript: call.metadata?.transcription?.text || "No transcript available",
+      summary: call.metadata?.transcription?.summary || "No summary available",
+      aiTags: (call.metadata as { aiTags?: string[] } | null)?.aiTags || [],
+      keywords: (call.metadata as { keywords?: string[] } | null)?.keywords || [],
+      recordingUrl: call.recordingUrl!,
+      isPlaying: false
+    }));
+
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const togglePlayback = (recordingId: string) => {
+    if (playingId === recordingId) {
+      setPlayingId(null);
+    } else {
+      setPlayingId(recordingId);
+    }
+  }
+
+  // Update filtered recordings based on search
   const filteredRecordings = recordings.filter(recording => {
     if (!searchTerm) return true
-    
+
     const searchLower = searchTerm.toLowerCase()
     return (
       recording.transcript.toLowerCase().includes(searchLower) ||
@@ -106,41 +142,44 @@ export function RecordingsList() {
     )
   })
 
-  const togglePlayback = (recordingId: string) => {
-    setRecordings(prev => prev.map(recording => ({
-      ...recording,
-      isPlaying: recording.id === recordingId ? !recording.isPlaying : false
-    })))
+  // Helper functions
+  function formatDuration(seconds: number): string {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function formatTimestamp(isoString?: string | null): string {
+    if (!isoString) return "";
+    return new Date(isoString).toLocaleString();
+  }
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Volume2 className="h-5 w-5" />
-          Recordings
-        </CardTitle>
-        <CardDescription>
-          Call recordings with AI-powered insights and search
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+
+    <Card className={cn("flex flex-col h-full border-0 shadow-none", className)}>
+      <CardContent className="flex flex-col flex-1 min-h-0 p-0">
         {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by keywords, transcript, or AI tags..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="p-6 pb-2 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by keywords, transcript, or AI tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
         {/* Recordings List */}
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6 space-y-3">
           {filteredRecordings.map((recording) => {
             const directionInfo = directionConfig[recording.direction]
-            
+
             return (
               <div key={recording.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-start justify-between mb-3">
@@ -156,32 +195,32 @@ export function RecordingsList() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => togglePlayback(recording.id)}
                     >
-                      {recording.isPlaying ? (
+                      {playingId === recording.id ? (
                         <Pause className="h-4 w-4 mr-1" />
                       ) : (
                         <Play className="h-4 w-4 mr-1" />
                       )}
-                      {recording.isPlaying ? "Pause" : "Play"}
+                      {playingId === recording.id ? "Pause" : "Play"}
                     </Button>
-                    
+
                     <Link href="/dashboard/calls/ai-assistant">
                       <Button variant="outline" size="sm">
                         <Sparkles className="h-4 w-4 mr-1" />
                         Ask AI
                       </Button>
                     </Link>
-                    
+
                     <Sheet>
                       <SheetTrigger asChild>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedRecording(recording)}
                         >
@@ -207,19 +246,19 @@ export function RecordingsList() {
                               ))}
                             </div>
                           </div>
-                          
+
                           <div>
                             <h4 className="font-medium mb-2">Summary:</h4>
                             <p className="text-sm text-muted-foreground">{recording.summary}</p>
                           </div>
-                          
+
                           <div>
                             <h4 className="font-medium mb-2">Full Transcript:</h4>
                             <div className="bg-muted/30 p-3 rounded text-sm">
                               {recording.transcript}
                             </div>
                           </div>
-                          
+
                           <div>
                             <h4 className="font-medium mb-2">Keywords:</h4>
                             <div className="flex flex-wrap gap-1">

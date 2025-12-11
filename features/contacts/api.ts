@@ -58,3 +58,9 @@ export function batchCreateContacts(contacts: CreateContactRequest[]) {
   });
 }
 
+export function toggleFavoriteContact(id: string) {
+  return http<{ is_favorite: boolean }>(`/contacts/${id}/favorite`, {
+    method: "PATCH",
+  });
+}
+

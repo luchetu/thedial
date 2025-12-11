@@ -106,10 +106,20 @@ export function LiveKitOutboundConfigurationForm({
   }, [liveKitTrunkData]);
 
   // Fetch credentials from the credential list
-  const { data: credentials = [], isLoading: isLoadingCredentials } = useTwilioCredentials(
+  const { data: allCredentials = [], isLoading: isLoadingCredentials } = useTwilioCredentials(
     credentialListSid || "",
     { enabled: !!credentialListSid }
   );
+
+  // Filter to only show credentials that have passwords stored locally
+  // Credentials without passwords cannot be used for LiveKit trunks
+  const credentials = useMemo(() => {
+    console.log("[LiveKitOutboundConfig] All credentials fetched:", allCredentials);
+    console.log("[LiveKitOutboundConfig] Credential list SID:", credentialListSid);
+    const filtered = allCredentials.filter((cred) => cred.password !== undefined && cred.password !== null && cred.password.trim() !== "");
+    console.log("[LiveKitOutboundConfig] Filtered credentials (with passwords):", filtered);
+    return filtered;
+  }, [allCredentials, credentialListSid]);
 
   // Extract credential list SID from selected Twilio trunk metadata
   const credentialListSidFromTrunk = useMemo(() => {
@@ -156,54 +166,17 @@ export function LiveKitOutboundConfigurationForm({
     return [];
   }, [credentialListSidFromTrunk]);
 
-  // When credential is selected, auto-fill username and password from Twilio credential
-  // These are stored in form state for backend submission, but not shown to user
-  // This also runs when credentials are loaded and a credentialSid is already set (editing scenario)
+  // Clear validation errors when switching to "existing" mode
+  // Backend will fetch credentials from Twilio/local DB, so frontend doesn't need username/password
   useEffect(() => {
-    if (credentialSid && credentials.length > 0 && livekitCredentialMode === "existing") {
-      const selectedCredential = credentials.find((c) => c.sid === credentialSid);
-      if (selectedCredential) {
-        // Auto-fill username from Twilio credential (for backend)
-        form.setFieldValue("authUsername", selectedCredential.username);
-        
-        // Auto-fill password from credential if available (backend fetches from local DB)
-        // If password is not available, backend will require it and store it for future use
-        if (selectedCredential.password) {
-          form.setFieldValue("authPassword", selectedCredential.password);
-          console.log("[LiveKitOutboundConfig] Twilio credential selected - username and password stored for backend:", {
-            credentialUsername: selectedCredential.username,
-            hasPassword: true,
-          });
-        } else {
-          // Password not available - clear it, backend will handle the error
-          form.setFieldValue("authPassword", "");
-          console.log("[LiveKitOutboundConfig] Twilio credential selected - password not available in local DB:", {
-            credentialUsername: selectedCredential.username,
-            message: "Password not found. Backend will require it or fetch from credential update.",
-          });
-        }
-        
-        // Trigger re-validation to clear errors - validators will now return undefined since mode is "existing"
-        // Use a small timeout to ensure form state is updated
-        setTimeout(() => {
-          form.validateField("authUsername", "change");
-          form.validateField("authPassword", "change");
-        }, 0);
-      }
-    }
-  }, [credentialSid, credentials, livekitCredentialMode, form]);
-
-  // Clear validation errors when switching to "existing" mode and credential is selected
-  useEffect(() => {
-    if (livekitCredentialMode === "existing" && credentialSid) {
-      // When using existing credentials, authUsername and authPassword are auto-filled
-      // Clear any validation errors for these fields
+    if (livekitCredentialMode === "existing") {
+      // Clear any validation errors for username/password fields since they're not required in "existing" mode
       setTimeout(() => {
         form.validateField("authUsername", "change");
         form.validateField("authPassword", "change");
       }, 0);
     }
-  }, [livekitCredentialMode, credentialSid, form]);
+  }, [livekitCredentialMode, form]);
 
   // Log form validation state for debugging
   useEffect(() => {
@@ -230,10 +203,10 @@ export function LiveKitOutboundConfigurationForm({
     }
   }, [form.state.canSubmit, form.state.fieldMeta, form.state.errorMap, form.state.values, livekitCredentialMode, form]);
 
-  // When no credential is selected, show password from LiveKit trunk (for edit mode)
+  // When no credential is selected and in "create" mode, show password from LiveKit trunk (for edit mode)
   useEffect(() => {
-    if (!credentialSid && storedPassword && isEditMode) {
-      // No credential selected - show password from LiveKit trunk if available
+    if (livekitCredentialMode === "create" && !credentialSid && storedPassword && isEditMode) {
+      // No credential selected and in "create" mode - show password from LiveKit trunk if available
       const currentPwd = form.getFieldValue("authPassword");
       const currentPwdStr = typeof currentPwd === "string" && currentPwd.trim() !== "" ? currentPwd : "";
       
@@ -243,7 +216,7 @@ export function LiveKitOutboundConfigurationForm({
         console.log("[LiveKitOutboundConfig] No credential selected - password autofilled from LiveKit trunk");
       }
     }
-  }, [credentialSid, storedPassword, isEditMode, form]);
+  }, [livekitCredentialMode, credentialSid, storedPassword, isEditMode, form]);
 
   const handleAddOutboundNumber = () => {
     const formatted = formatPhoneNumber(outboundNumberInput);
@@ -492,11 +465,17 @@ export function LiveKitOutboundConfigurationForm({
                   <SelectValue placeholder="Select a credential" />
                 </SelectTrigger>
                 <SelectContent>
-                  {credentials.map((credential) => (
-                    <SelectItem key={credential.sid} value={credential.sid}>
-                      {credential.username}
-                    </SelectItem>
-                  ))}
+                  {credentials.length === 0 ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      No credentials with passwords available. Please create or update credentials to store passwords locally.
+                    </div>
+                  ) : (
+                    credentials.map((credential) => (
+                      <SelectItem key={credential.sid} value={credential.sid}>
+                        {credential.username}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               {!field.state.meta.isValid && (
@@ -505,7 +484,9 @@ export function LiveKitOutboundConfigurationForm({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                      Select a credential from the Twilio trunk&apos;s credential list. Username and password will be automatically fetched.
+                {credentials.length === 0
+                  ? "No credentials with passwords stored locally. Only credentials created or updated through this system can be used. Please create or update credentials in the credential list to store passwords locally."
+                  : "Select a credential from the Twilio trunk's credential list. Only credentials with passwords stored locally are shown. Username and password will be automatically fetched."}
               </p>
             </div>
           )}
@@ -517,11 +498,21 @@ export function LiveKitOutboundConfigurationForm({
 
       {/* When Twilio trunk and credential are selected, show info message - no username/password fields needed */}
       {livekitCredentialMode === "existing" && twilioTrunkSid && credentialSid && (
-        <div className="space-y-2 p-4 bg-muted/50 rounded-md border">
-          <p className="text-sm font-medium">Using Twilio Credential</p>
-          <p className="text-xs text-muted-foreground">
-            Username and password will be automatically fetched from the selected Twilio credential and used to configure the LiveKit outbound trunk.
-          </p>
+        <div className="space-y-2 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5">
+              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Using Twilio Credential</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Username will be fetched from Twilio, and password will be retrieved from the local database. 
+                If the password is not stored locally, you will need to update the credential password in the credential list first.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -754,13 +745,13 @@ export function LiveKitOutboundConfigurationForm({
       )}
 
       {/* When Twilio trunk and credential are selected, show info message - no username/password fields needed */}
-      {twilioTrunkSid && credentialSid && (
+      {livekitCredentialMode === "existing" && twilioTrunkSid && credentialSid && (
         <div className="space-y-2 p-4 bg-muted/50 rounded-md border">
           <p className="text-sm font-medium">Using Twilio Credential</p>
-                <p className="text-xs text-muted-foreground">
-            Username and password will be automatically fetched from the selected Twilio credential and used to configure the LiveKit outbound trunk.
-                </p>
-              </div>
+          <p className="text-xs text-muted-foreground">
+            The backend will automatically fetch the username from Twilio and password from the local database when creating the LiveKit outbound trunk.
+          </p>
+        </div>
       )}
 
       {/* Show username and password fields when Twilio trunk is selected but no credential selected yet (editing scenario) */}

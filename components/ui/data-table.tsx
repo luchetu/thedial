@@ -5,9 +5,11 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
+  type SortingState,
   type OnChangeFn,
   type Table as TanStackTable,
 } from "@tanstack/react-table";
@@ -22,6 +24,8 @@ interface DataTableProps<TData, TValue = unknown> {
   emptyMessage?: string;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
   onTableInit?: (table: TanStackTable<TData>) => void;
   isLoading?: boolean;
   skeletonRows?: number;
@@ -33,6 +37,8 @@ export function DataTable<TData, TValue = unknown>({
   emptyMessage = "No results.",
   columnFilters,
   onColumnFiltersChange,
+  sorting,
+  onSortingChange,
   onTableInit,
   isLoading = false,
   skeletonRows = 5,
@@ -42,10 +48,13 @@ export function DataTable<TData, TValue = unknown>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     state: {
       columnFilters,
+      sorting,
     },
     onColumnFiltersChange,
+    onSortingChange,
   });
 
   const initializedRef = useRef(false);

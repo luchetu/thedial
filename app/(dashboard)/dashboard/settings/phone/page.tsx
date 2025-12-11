@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import type { UserPhoneNumber } from "@/features/phone-numbers/types";
 import { PhoneSettingsSecondaryMenu } from "@/components/phone-settings-secondary-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -65,9 +66,8 @@ export default function PhoneSettingsPage() {
   const hasAnyNumbers = (phoneNumbers?.length ?? 0) > 0;
 
   const getTypeBadgeLabel = (phoneNumber: UserPhoneNumber) => {
-    // Use provider field if available, otherwise fall back to twilioSid check
-    const provider = phoneNumber.provider || (phoneNumber.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
-    const isDial = provider === "twilio" || provider === "vonage" || provider === "livekit"; // Add other dial-capable providers
+    const provider = phoneNumber.provider;
+    const isDial = provider === "twilio" || provider === "vonage" || provider === "livekit";
     return isDial ? "Dial" : "Caller ID";
   };
 
@@ -75,7 +75,7 @@ export default function PhoneSettingsPage() {
     <div className="flex h-screen">
       {/* Secondary menu */}
       <aside className="w-60 shrink-0 border-r bg-white flex flex-col">
-        <div className="px-4 pt-4 pb-2 border-b">
+        <div className="px-4 pt-4 pb-2">
           <h2 className="text-sm font-semibold text-muted-foreground">
             Phone
           </h2>
@@ -88,8 +88,9 @@ export default function PhoneSettingsPage() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <h1 className="text-lg font-semibold">Phone Numbers</h1>
           <div className="flex-1" />
           <Button
@@ -121,7 +122,6 @@ export default function PhoneSettingsPage() {
                 </CardContent>
               </Card>
             )}
-
             {!isLoading && !error && hasAnyNumbers && (
               <div className="space-y-6">
                 <div>
@@ -156,63 +156,63 @@ export default function PhoneSettingsPage() {
                 ) : (
                   <div className="space-y-3">
                     {filteredPhoneNumbers.map((phoneNumber) => (
-                    <Card key={phoneNumber.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <Phone className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-medium truncate">
-                                  {phoneNumber.friendlyName || formatPhoneNumber(phoneNumber.phoneNumber)}
-                                </h3>
-                                <Badge
-                                  variant="default"
-                                  className={`text-xs ${getStatusBadgeClasses(phoneNumber.status)}`}
-                                >
-                                  {phoneNumber.status}
-                                </Badge>
-                                <Badge
-                                  variant="default"
-                                  className="text-xs bg-blue-100 text-blue-700 border-blue-200"
-                                >
-                                  {getTypeBadgeLabel(phoneNumber)}
-                                </Badge>
+                      <Card key={phoneNumber.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <Phone className="h-5 w-5 text-primary" />
                               </div>
-                              <div className="flex items-center gap-4 mt-1">
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Phone className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">
-                                    {formatPhoneNumber(phoneNumber.phoneNumber)}
-                                  </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium truncate">
+                                    {phoneNumber.friendlyName || formatPhoneNumber(phoneNumber.phoneNumber)}
+                                  </h3>
+                                  <Badge
+                                    variant="default"
+                                    className={`text-xs ${getStatusBadgeClasses(phoneNumber.status)}`}
+                                  >
+                                    {phoneNumber.status}
+                                  </Badge>
+                                  <Badge
+                                    variant="default"
+                                    className="text-xs bg-blue-100 text-blue-700 border-blue-200"
+                                  >
+                                    {getTypeBadgeLabel(phoneNumber)}
+                                  </Badge>
                                 </div>
-                                {phoneNumber.country && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {phoneNumber.country}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-4 mt-1">
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <Phone className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">
+                                      {formatPhoneNumber(phoneNumber.phoneNumber)}
+                                    </span>
+                                  </div>
+                                  {phoneNumber.country && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {phoneNumber.country}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPhoneNumber(phoneNumber);
+                                  setConfigDialogOpen(true);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Settings className="h-4 w-4" />
+                                Configure
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPhoneNumber(phoneNumber);
-                                setConfigDialogOpen(true);
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <Settings className="h-4 w-4" />
-                              Configure
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}

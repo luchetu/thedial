@@ -5,6 +5,8 @@ import { Layers, Plus } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { StatsGrid } from "@/components/ui/stat-card";
@@ -135,19 +137,25 @@ export default function AdminPlansPage() {
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Plans"
-          icon={Layers}
-          action={
-            <Button variant="secondary" onClick={handleCreatePlan}>
-              <Plus className="size-4" />
-              Create plan
-            </Button>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <Layers className="h-6 w-6" />
+                  Plans
+                </h1>
+              </div>
+              <Button onClick={handleCreatePlan} variant="secondary" className="flex items-center gap-2">
+                <Plus className="size-4" />
+                Create plan
+              </Button>
+            </div>
             <StatsGrid
               stats={[
                 { title: "Total plans", value: summary.totalPlans },

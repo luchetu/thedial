@@ -4,6 +4,7 @@ import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { RecordingsList } from "@/components/dashboard/RecordingsList";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function RecordingsPage() {
   return (
@@ -18,28 +19,29 @@ export default function RecordingsPage() {
           <CallsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight">Recordings</h1>
-              <span className="text-muted-foreground">|</span>
-              <p className="text-sm text-muted-foreground">
-                Listen to and manage your call recordings
-              </p>
-            </div>
-          </div>
+          <PageBreadcrumb />
+          <div className="flex-1" />
         </header>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <RecordingsList />
+
+        {/* Fixed Title Section */}
+        <div className="flex-none px-6 pt-6 pb-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Recordings</h1>
+            <p className="text-sm text-muted-foreground">
+              Listen to and manage your call recordings
+            </p>
           </div>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 min-h-0 px-6 pb-6">
+          <RecordingsList className="h-full" />
         </div>
       </div>
     </div>

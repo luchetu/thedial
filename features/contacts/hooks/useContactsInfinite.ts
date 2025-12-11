@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { getContacts } from "../api";
 import { contactsKeys } from "../queryKeys";
 import type { Contact } from "../types";
@@ -13,7 +13,7 @@ export function useContactsInfinite(params?: {
 }) {
   const queryKey = [...contactsKeys.list(params), "infinite"] as const;
 
-  return useInfiniteQuery<Contact[], Error, Contact[], typeof queryKey, number>({
+  return useInfiniteQuery<Contact[], Error, InfiniteData<Contact[]>, typeof queryKey, number>({
     queryKey,
     queryFn: ({ pageParam = 0 }) =>
       getContacts({

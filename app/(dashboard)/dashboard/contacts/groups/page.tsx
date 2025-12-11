@@ -5,6 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Users, MoreHorizontal } from "lucide-react";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 // Sample contact groups data
 const groupsData = [
@@ -51,15 +52,16 @@ export default function ContactGroupsPage() {
           <ContactsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <div className="flex-1" />
         </header>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
@@ -74,7 +76,7 @@ export default function ContactGroupsPage() {
                   Create Group
                 </Button>
               </div>
-              
+
               {/* Groups Grid */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {groupsData.map((group) => (

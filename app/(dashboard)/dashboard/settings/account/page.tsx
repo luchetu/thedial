@@ -14,6 +14,7 @@ import { updateCurrentUser } from "@/features/auth/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { formatLongDate } from "@/lib/utils/date";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function AccountSettingsPage() {
   const { data: user, isLoading, error } = useCurrentUser();
@@ -35,10 +36,10 @@ export default function AccountSettingsPage() {
     setIsSaving(true);
     try {
       await updateCurrentUser({ fullName });
-      
+
       // Invalidate and refetch current user
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      
+
       toastSuccess("Account settings updated successfully");
       setIsEditing(false);
     } catch (error) {
@@ -83,11 +84,12 @@ export default function AccountSettingsPage() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <div className="flex-1" />
         </header>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">

@@ -4,6 +4,7 @@ import { CallsSecondaryMenu } from "@/components/calls-secondary-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CallLogsList } from "@/components/dashboard/CallLogsList";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function CallsPage() {
   return (
@@ -18,30 +19,28 @@ export default function CallsPage() {
           <CallsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
+        {/* Breadcrumb Header Bar */}
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <div className="flex flex-1 items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight">All Calls</h1>
-                <span className="text-muted-foreground">|</span>
-                <p className="text-sm text-muted-foreground">
-                  Review and filter your recent inbound and outbound calls.
-                </p>
-              </div>
-            </div>
-          </div>
+          <PageBreadcrumb />
         </header>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <CallLogsList />
+
+        {/* Fixed Title Section */}
+        <div className="flex-none px-6 pt-6 pb-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Call Logs</h1>
+            <p className="text-sm text-muted-foreground">
+              View your complete call history and details
+            </p>
           </div>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 min-h-0 px-6 pb-6">
+          <CallLogsList className="h-full" />
         </div>
       </div>
     </div>

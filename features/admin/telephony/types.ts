@@ -10,6 +10,9 @@ export type Plan = {
   includedPstnMinutes: number;
   includedAiMinutes: number;
   includedPhoneNumbers: number;
+  monthlyCredits: number;
+  rateVoiceMinCredits: number;
+  rateAiTokenCredits: number;
   perNumberMonthlyPriceCents: number;
   defaultRoutingProfileTemplateId?: string;
   allowedCountries: string[];
@@ -29,6 +32,9 @@ type PlanPayloadBase = {
   includedPstnMinutes?: number;
   includedAiMinutes?: number;
   includedPhoneNumbers?: number;
+  monthlyCredits?: number;
+  rateVoiceMinCredits?: number;
+  rateAiTokenCredits?: number;
   perNumberMonthlyPriceCents?: number;
   defaultRoutingProfileTemplateId?: string;
   allowedCountries?: string[];
