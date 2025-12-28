@@ -70,7 +70,7 @@ export function Dialpad({ onDigitPress, disabled, className }: DialpadProps) {
                     variant="outline"
                     className="h-16 w-16 rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-90 shadow-[0_8px_32px_-4px_rgba(31,38,135,0.1)] hover:shadow-[0_8px_32px_-4px_rgba(31,38,135,0.2)] border border-white/30 bg-white/10 hover:bg-white/20 text-slate-800 p-0 select-none backdrop-blur-xl ring-1 ring-white/20"
                     onPointerDown={() => digit.longPress ? handlePointerDown(digit) : undefined}
-                    onPointerUp={() => digit.longPress ? handlePointerUp(digit) : onDigitPress(digit.label)}
+                    onPointerUp={() => digit.longPress ? handlePointerUp(digit) : undefined}
                     onPointerLeave={handlePointerLeave}
                     onClick={digit.longPress ? undefined : () => onDigitPress(digit.label)}
                     disabled={disabled}

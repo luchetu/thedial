@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
   const { data: timeseries, isLoading: isTimeseriesLoading } = useMyAnalyticsTimeseries(params);
 
   const chartData =
-    timeseries?.buckets.map((b) => ({
+    timeseries?.buckets?.map((b) => ({
       day: new Date(b.start).toLocaleDateString(),
       answered: b.callsAnswered,
       missed: b.callsMissed,
@@ -71,25 +71,25 @@ export default function AnalyticsPage() {
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div className="flex flex-col gap-1 p-3 rounded-xl bg-background border shadow-sm">
                   <span className="text-sm text-muted-foreground font-medium">Total Calls</span>
-                  <span className="text-2xl font-bold">{summary?.calls.total.toLocaleString() ?? "—"}</span>
+                  <span className="text-2xl font-bold">{summary?.calls?.total?.toLocaleString() ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/10 dark:border-green-900/30">
                   <span className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center gap-1.5">
                     <PhoneIncoming className="h-3.5 w-3.5" /> Answered
                   </span>
-                  <span className="text-2xl font-bold text-green-700 dark:text-green-300">{summary?.calls.answered.toLocaleString() ?? "—"}</span>
+                  <span className="text-2xl font-bold text-green-700 dark:text-green-300">{summary?.calls?.answered?.toLocaleString() ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/10 dark:border-orange-900/30">
                   <span className="text-sm text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1.5">
                     <PhoneMissed className="h-3.5 w-3.5" /> Missed
                   </span>
-                  <span className="text-2xl font-bold text-orange-700 dark:text-orange-300">{summary?.calls.missed.toLocaleString() ?? "—"}</span>
+                  <span className="text-2xl font-bold text-orange-700 dark:text-orange-300">{summary?.calls?.missed?.toLocaleString() ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3 rounded-xl bg-red-50/50 border border-red-100 dark:bg-red-900/10 dark:border-red-900/30">
                   <span className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-1.5">
                     <PhoneOff className="h-3.5 w-3.5" /> Failed
                   </span>
-                  <span className="text-2xl font-bold text-red-700 dark:text-red-300">{summary?.calls.failed.toLocaleString() ?? "—"}</span>
+                  <span className="text-2xl font-bold text-red-700 dark:text-red-300">{summary?.calls?.failed?.toLocaleString() ?? "—"}</span>
                 </div>
               </div>
             </CardContent>

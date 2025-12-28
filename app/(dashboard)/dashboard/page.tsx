@@ -153,7 +153,7 @@ export default function DashboardPage() {
                         : "—"}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {summary?.calls.answered.toLocaleString() ?? 0} answered calls
+                      {(summary?.calls?.answered ?? 0).toLocaleString()} answered calls
                     </p>
                   </CardContent>
                 </Card>

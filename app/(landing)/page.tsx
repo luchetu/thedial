@@ -9,14 +9,14 @@ export default function Home() {
         <section className="flex flex-col items-center text-center">
           <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             Turn every client call into searchable notes — without changing how you call.
-            
+
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-7 text-muted-foreground">
             Automatically record, transcribe, and organize your business calls using AI. Works seamlessly with iPhone, Android, and VoIP. Keep your number. Keep your workflow. Get your time back.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/signup"
+              href="/auth/signup"
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:opacity-90"
             >
               Try it free →

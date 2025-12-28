@@ -72,8 +72,8 @@ export default function TrunksPage() {
       const query = routingProfileQueries[index];
       if (query?.data) {
         counts[trunk.id] = {
-          outbound: query.data.outbound.length,
-          inbound: query.data.inbound.length,
+          outbound: query.data.outbound?.length ?? 0,
+          inbound: query.data.inbound?.length ?? 0,
         };
       } else {
         counts[trunk.id] = { outbound: 0, inbound: 0 };
