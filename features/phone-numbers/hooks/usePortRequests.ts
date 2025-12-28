@@ -14,7 +14,7 @@ export interface PortRequest {
 }
 
 async function listPortRequests(): Promise<PortRequest[]> {
-  return http<PortRequest[]>("/twilio/porting/in/requests");
+  return http<PortRequest[]>("/telephony/porting/in/requests");
 }
 
 export function usePortRequests() {

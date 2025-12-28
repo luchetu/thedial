@@ -6,17 +6,21 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { useUserCalls } from "@/features/calls/hooks";
 
 const chartConfig: ChartConfig = {
-  incoming: {
-    label: "Inbound",
-    color: "#fd753e",
-  },
-  outgoing: {
-    label: "Outbound",
-    color: "#ea580c",
+  answered: {
+    label: "Answered",
+    color: "#10b981", // Emerald 500
   },
   missed: {
     label: "Missed",
-    color: "#c2410c",
+    color: "#f43f5e", // Rose 500
+  },
+  failed: {
+    label: "Failed",
+    color: "#ef4444", // Red 500
+  },
+  busy: {
+    label: "Busy",
+    color: "#f59e0b", // Amber 500
   },
 };
 
@@ -32,8 +36,57 @@ function getLast7Days() {
   return days;
 }
 
+export interface CallActivityBarChartProps {
+  data: Array<{
+    day: string;
+    answered: number;
+    missed: number;
+    failed: number;
+    busy?: number;
+  }>;
+  isLoading?: boolean;
+  isError?: boolean;
+}
+
+export function CallActivityBarChart({ data, isLoading, isError }: CallActivityBarChartProps) {
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading call activity…</p>;
+  }
+
+  if (isError) {
+    return <p className="text-sm text-destructive">Failed to load call activity.</p>;
+  }
+
+  if (!data.length) {
+    return <p className="text-sm text-muted-foreground">No call activity in the selected period.</p>;
+  }
+
+  return (
+    <ChartContainer config={chartConfig} className="h-[160px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="day"
+            tickLine={false}
+            tickMargin={8}
+            axisLine={false}
+          />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="answered" fill="var(--color-answered)" radius={4} />
+          <Bar dataKey="missed" fill="var(--color-missed)" radius={4} />
+          <Bar dataKey="failed" fill="var(--color-failed)" radius={4} />
+          <Bar dataKey="busy" fill="var(--color-busy)" radius={4} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
+  );
+}
+
 export function CallActivityChart() {
-  const { data, isLoading, isError } = useUserCalls({ limit: 200 });
+  const { data, isLoading, isError } = useUserCalls({ limit: 500 }); // Increased limit for better stats
 
   const chartData = useMemo(() => {
     const calls = data ?? [];
@@ -41,7 +94,7 @@ export function CallActivityChart() {
     const buckets = new Map(
       days.map((d) => [
         d.key,
-        { day: d.label, incoming: 0, outgoing: 0, missed: 0 },
+        { day: d.label, answered: 0, missed: 0, failed: 0, busy: 0 },
       ]),
     );
 
@@ -53,50 +106,20 @@ export function CallActivityChart() {
       const bucket = buckets.get(key);
       if (!bucket) return;
 
-      if (call.direction === "outbound") {
-        bucket.outgoing += 1;
-      } else {
-        bucket.incoming += 1;
-      }
-      if (call.status === "missed") {
+      const status = (call.status || "").toLowerCase();
+      if (status === "completed" || status === "answered") {
+        bucket.answered += 1;
+      } else if (status === "missed") {
         bucket.missed += 1;
+      } else if (status === "failed") {
+        bucket.failed += 1;
+      } else if (status === "busy") {
+        bucket.busy += 1;
       }
     });
 
     return Array.from(buckets.values());
   }, [data]);
 
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading call activity…</p>;
-  }
-
-  if (isError) {
-    return <p className="text-sm text-destructive">Failed to load call activity.</p>;
-  }
-
-  if (!chartData.length) {
-    return <p className="text-sm text-muted-foreground">No call activity in the last 7 days.</p>;
-  }
-
-  return (
-    <ChartContainer config={chartConfig} className="h-[160px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="day"
-            tickLine={false}
-            tickMargin={8}
-            axisLine={false}
-          />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="incoming" fill="#fd753e" radius={4} />
-          <Bar dataKey="outgoing" fill="#ea580c" radius={4} />
-          <Bar dataKey="missed" fill="#c2410c" radius={4} />
-        </BarChart> 
-      </ResponsiveContainer>
-    </ChartContainer>
-  );
+  return <CallActivityBarChart data={chartData} isLoading={isLoading} isError={isError} />;
 }

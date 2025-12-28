@@ -19,12 +19,12 @@ export default function TopNav() {
           <Link href="/contact" className="transition-colors hover:text-foreground">
             Contact
           </Link>
-          <Link href="/login" className="transition-colors hover:text-foreground">
+          <Link href="/auth/login" className="transition-colors hover:text-foreground">
             Sign in
           </Link>
         </div>
         <Link
-          href="/signup"
+          href="/auth/signup"
           className="inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:opacity-90"
         >
           Try it Free

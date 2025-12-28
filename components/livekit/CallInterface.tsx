@@ -39,13 +39,13 @@ export function CallInterface({ roomName, identity, callerName, callerNumber, on
   // No retries - close modal on any disconnect, user can retry manually
   const handleDisconnected = useCallback(async (reason?: DisconnectReason) => {
     console.log("LiveKitRoom disconnected, reason:", reason);
-    
+
     // DisconnectReason.CLIENT_INITIATED = 1 (user clicked disconnect)
     // DisconnectReason.SERVER_SHUTDOWN = 2 (room was deleted by server/backend)
     // Other values are connection errors
-    
+
     const isUserInitiated = reason === DisconnectReason.CLIENT_INITIATED;
-    
+
     if (isUserInitiated) {
       // User manually disconnected - delete room to end SIP call
       console.log("User-initiated disconnect - deleting room");
@@ -66,7 +66,7 @@ export function CallInterface({ roomName, identity, callerName, callerNumber, on
         console.error("Failed to delete room after disconnect:", error);
       }
     }
-    
+
     // Always close the modal on disconnect (no retries)
     onDisconnect?.();
   }, [roomName, onDisconnect]);
@@ -87,8 +87,8 @@ export function CallInterface({ roomName, identity, callerName, callerNumber, on
         // Disconnect will be handled by the inner component
       }
     }}>
-      <DialogContent 
-        className="sm:max-w-md bg-linear-to-b from-gray-900 to-gray-800 border-gray-700 text-white z-9999"
+      <DialogContent
+        className="sm:max-w-md bg-white/85 backdrop-blur-3xl border-white/40 text-slate-900 shadow-2xl z-9999 ring-1 ring-white/50"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Call Interface</DialogTitle>
@@ -110,7 +110,7 @@ export function CallInterface({ roomName, identity, callerName, callerNumber, on
             onDisconnected={handleDisconnected}
             onError={handleError}
           >
-            <CallInterfaceContent 
+            <CallInterfaceContent
               roomName={roomName}
               callerName={callerName}
               callerNumber={callerNumber}

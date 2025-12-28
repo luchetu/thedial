@@ -37,17 +37,32 @@ export interface SearchPhoneNumbersParams {
   limit?: number
 }
 
+export interface PhoneNumberCallConfig {
+  participantName?: string
+  displayName?: string
+  krispEnabled?: boolean
+  playDialtone?: boolean
+}
+
+export interface PhoneNumberCapabilities {
+  voice?: boolean
+  sms?: boolean
+  mms?: boolean
+  callConfig?: PhoneNumberCallConfig
+  [key: string]: unknown
+}
+
 export interface UserPhoneNumber {
   id: string
   userId: string
-  provider: string // 'twilio', 'vonage', 'sms-verified', etc.
+  provider: string // 'twilio', 'vonage', 'sms-verified', 'livekit', etc.
   providerId: string // Provider-specific identifier
-  twilioSid: string // DEPRECATED: Use providerId. Kept for backward compatibility
+  twilioSid?: string // DEPRECATED: Use providerId. Kept for backward compatibility only
   phoneNumber: string
   friendlyName: string
   country: string
   status: string
-  capabilities: unknown
+  capabilities: PhoneNumberCapabilities | unknown
   forwardingNumber: string
   aiAssistantEnabled: boolean
   purchasedAt?: string

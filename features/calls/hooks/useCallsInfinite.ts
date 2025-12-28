@@ -10,6 +10,8 @@ const PAGE_SIZE = 50;
 export function useCallsInfinite(params?: {
   direction?: string;
   status?: string;
+  fromDate?: string;
+  toDate?: string;
 }) {
   const queryKey = ["calls", "infinite", params] as const;
 

@@ -126,7 +126,19 @@ export function AddTrunkLiveKitOutboundForm({
       } catch (error) {
         const err = error as Error;
         console.error("[AddTrunkLiveKitOutboundForm] Submission error:", err);
-        toastError(`Failed to ${isEditMode ? "update" : "configure"} trunk: ${err.message}`);
+        
+        // Improve error message for credential-related errors
+        let errorMessage = err.message;
+        if (err.message.includes("password not found in local database") || 
+            err.message.includes("password not found in local DB")) {
+          errorMessage = "The selected credential's password is not stored in the local database. Please update the credential password in the credential list first, then try again.";
+        } else if (err.message.includes("credential") && err.message.includes("not found")) {
+          errorMessage = "The selected credential could not be found. Please verify the credential exists in Twilio and try again.";
+        } else if (err.message.includes("twilioCredentialListSid is required")) {
+          errorMessage = "Credential list is required when using an existing credential. Please select a credential list.";
+        }
+        
+        toastError(`Failed to ${isEditMode ? "update" : "configure"} trunk: ${errorMessage}`);
         throw error;
       }
     },

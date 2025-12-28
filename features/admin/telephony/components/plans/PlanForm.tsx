@@ -36,6 +36,9 @@ interface PlanFormValues extends Record<string, unknown> {
   name: string;
   billingProductId: string;
   monthlyPrice: string;
+  monthlyCredits: string;
+  rateVoiceMinCredits: string;
+  rateAiTokenCredits: string;
   perNumberMonthlyPrice: string;
   includedRealtimeMinutes: string;
   includedTranscriptionMinutes: string;
@@ -55,6 +58,9 @@ export interface PlanFormSubmission {
   billingProductId?: string;
   monthlyPriceCents?: number;
   perNumberMonthlyPriceCents?: number;
+  monthlyCredits?: number;
+  rateVoiceMinCredits?: number;
+  rateAiTokenCredits?: number;
   includedRealtimeMinutes?: number;
   includedTranscriptionMinutes?: number;
   includedPstnMinutes?: number;
@@ -181,6 +187,9 @@ export const PlanForm = ({ plan, onSubmit, isLoading = false, submitLabel = "Cre
       name: plan?.name ?? "",
       billingProductId: plan?.billingProductId ?? "",
       monthlyPrice: formatCentsToDollars(plan?.monthlyPriceCents),
+      monthlyCredits: plan ? String(plan.monthlyCredits ?? 0) : "",
+      rateVoiceMinCredits: plan ? String(plan.rateVoiceMinCredits ?? 0) : "",
+      rateAiTokenCredits: plan ? String(plan.rateAiTokenCredits ?? 0) : "",
       perNumberMonthlyPrice: formatCentsToDollars(plan?.perNumberMonthlyPriceCents),
       includedRealtimeMinutes: plan ? String(plan.includedRealtimeMinutes ?? 0) : "",
       includedTranscriptionMinutes: plan ? String(plan.includedTranscriptionMinutes ?? 0) : "",
@@ -210,6 +219,9 @@ export const PlanForm = ({ plan, onSubmit, isLoading = false, submitLabel = "Cre
             values.perNumberMonthlyPrice,
             "Per-number price"
           ),
+          monthlyCredits: parseInteger(values.monthlyCredits, "Monthly credits"),
+          rateVoiceMinCredits: parseInteger(values.rateVoiceMinCredits, "Voice rate"),
+          rateAiTokenCredits: parseInteger(values.rateAiTokenCredits, "AI rate"),
           includedRealtimeMinutes: parseInteger(values.includedRealtimeMinutes, "Realtime minutes"),
           includedTranscriptionMinutes: parseInteger(
             values.includedTranscriptionMinutes,
@@ -379,6 +391,62 @@ export const PlanForm = ({ plan, onSubmit, isLoading = false, submitLabel = "Cre
           </form.Field>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-3">
+          <form.Field name="monthlyCredits">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="monthlyCredits">Monthly Credits</Label>
+                <Input
+                  id="monthlyCredits"
+                  inputMode="numeric"
+                  min="0"
+                  value={String(field.state.value ?? "")}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="10000"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Unified credits for voice/AI.
+                </p>
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="rateVoiceMinCredits">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="rateVoiceMinCredits">Voice Cost (Credits/Min)</Label>
+                <Input
+                  id="rateVoiceMinCredits"
+                  inputMode="numeric"
+                  min="0"
+                  value={String(field.state.value ?? "")}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="100"
+                />
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="rateAiTokenCredits">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="rateAiTokenCredits">AI Cost (Credits/Token)</Label>
+                <Input
+                  id="rateAiTokenCredits"
+                  inputMode="numeric"
+                  min="0"
+                  value={String(field.state.value ?? "")}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="1"
+                />
+              </div>
+            )}
+          </form.Field>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <form.Field name="includedRealtimeMinutes">
             {(field) => (
@@ -478,8 +546,8 @@ export const PlanForm = ({ plan, onSubmit, isLoading = false, submitLabel = "Cre
               const selected = Array.isArray(field.state.value)
                 ? (field.state.value as string[])
                 : String(field.state.value || "")
-                    .split(/[,\s]+/)
-                    .filter(Boolean);
+                  .split(/[,\s]+/)
+                  .filter(Boolean);
 
               const addCountry = (code: string) => {
                 if (!selected.includes(code)) {

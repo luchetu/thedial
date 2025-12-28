@@ -33,6 +33,8 @@ export type CallRecord = {
 export type ListUserCallsParams = {
   direction?: string;
   status?: string;
+  fromDate?: string; // ISO date string
+  toDate?: string;   // ISO date string
   limit?: number;
   offset?: number;
 };
@@ -41,6 +43,8 @@ export async function listUserCalls(params: ListUserCallsParams = {}): Promise<C
   const qs = new URLSearchParams();
   if (params.direction) qs.set("direction", params.direction);
   if (params.status) qs.set("status", params.status);
+  if (params.fromDate) qs.set("from_date", params.fromDate);
+  if (params.toDate) qs.set("to_date", params.toDate);
   if (typeof params.limit === "number") qs.set("limit", String(params.limit));
   if (typeof params.offset === "number") qs.set("offset", String(params.offset));
 
@@ -48,4 +52,19 @@ export async function listUserCalls(params: ListUserCallsParams = {}): Promise<C
   return http<CallRecord[]>(`/calls${suffix}`);
 }
 
+export type TranscriptionSegment = {
+  id: string;
+  callRecordId: string;
+  transcriptionProvider?: string;
+  segmentId: string;
+  startTime: number;
+  endTime: number;
+  text: string;
+  language?: string;
+  participantIdentity?: string;
+  createdAt: string;
+};
 
+export async function getCallTranscript(callId: string): Promise<TranscriptionSegment[]> {
+  return http<TranscriptionSegment[]>(`/calls/${callId}/transcript`);
+}

@@ -15,7 +15,7 @@ export function PortPhoneNumberForm() {
   const [authorizedName, setAuthorizedName] = React.useState("");
   const [authorizedEmail, setAuthorizedEmail] = React.useState("");
   const [authorizedPhone, setAuthorizedPhone] = React.useState("");
-  
+
   const [isCheckingPortability, setIsCheckingPortability] = React.useState(false);
   const [portabilityChecked, setPortabilityChecked] = React.useState(false);
   const [isPortable, setIsPortable] = React.useState(false);
@@ -56,14 +56,14 @@ export function PortPhoneNumberForm() {
     }
 
     setIsCheckingPortability(true);
-    // TODO: API call to GET /twilio/porting/check?phoneNumber={phoneNumber}
-    // Backend endpoint: /twilio/porting/check
+    // TODO: API call to GET /telephony/porting/check?phoneNumber={phoneNumber}
+    // Backend endpoint: /telephony/porting/check
     // Note: Twilio Porting API is in Public Beta and only supports US non-toll-free numbers
     try {
       // const response = await fetch(`/api/twilio/porting/check?phoneNumber=${encodeURIComponent(phoneNumber)}`);
       // const data = await response.json();
       // setIsPortable(data.portable);
-      
+
       // For now, simulate check
       setTimeout(() => {
         setIsCheckingPortability(false);
@@ -83,7 +83,7 @@ export function PortPhoneNumberForm() {
     }
 
     setIsSubmitting(true);
-    // TODO: API call to /twilio/porting/request
+    // TODO: API call to /telephony/porting/request
     setTimeout(() => {
       setIsSubmitting(false);
       // Handle success/error
@@ -91,7 +91,7 @@ export function PortPhoneNumberForm() {
   };
 
   const canCheckPortability = phoneNumber.startsWith("+") && phoneNumber.length > 10;
-  const canSubmit = 
+  const canSubmit =
     isPortable &&
     accountNumber.trim() !== "" &&
     accountHolderName.trim() !== "" &&
@@ -204,7 +204,7 @@ export function PortPhoneNumberForm() {
           <>
             <div className="pt-4 border-t">
               <h4 className="text-sm font-medium mb-4">Account Information</h4>
-              
+
               <div className="space-y-4">
                 {/* Account Number */}
                 <div className="space-y-2">
@@ -276,7 +276,7 @@ export function PortPhoneNumberForm() {
               <p className="text-xs text-muted-foreground mb-4">
                 This person will receive the Letter of Authorization (LOA) to sign
               </p>
-              
+
               <div className="space-y-4">
                 {/* Authorized Name */}
                 <div className="space-y-2">

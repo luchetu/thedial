@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { PhoneNumbersEmptyState } from "@/components/phone-numbers/PhoneNumbersEmptyState";
 import { AddPhoneNumberDialog } from "@/components/phone-numbers/AddPhoneNumberDialog";
 import { PhoneNumberConfigDialog } from "@/components/phone-numbers/PhoneNumberConfigDialog";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function DialNumbersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -23,9 +24,8 @@ export default function DialNumbersPage() {
   const dialNumbers =
     phoneNumbers?.filter(
       (pn) => {
-        // Use provider field if available, otherwise fall back to twilioSid check
-        const provider = pn.provider || (pn.twilioSid?.startsWith("non-twilio-") ? "sms-verified" : "twilio");
-        return provider === "twilio" || provider === "vonage" || provider === "livekit"; // Add other dial-capable providers
+        const provider = pn.provider;
+        return provider === "twilio" || provider === "vonage" || provider === "livekit";
       }
     ) ?? [];
 
@@ -43,7 +43,7 @@ export default function DialNumbersPage() {
     <div className="flex h-screen">
       {/* Secondary menu */}
       <aside className="w-60 shrink-0 border-r bg-white flex flex-col">
-        <div className="px-4 pt-4 pb-2 border-b">
+        <div className="px-4 pt-4 pb-2">
           <h2 className="text-sm font-semibold text-muted-foreground">
             Phone
           </h2>
@@ -56,8 +56,9 @@ export default function DialNumbersPage() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <h1 className="text-lg font-semibold">Dial Numbers</h1>
           <div className="flex-1" />
           <Button

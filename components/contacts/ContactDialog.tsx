@@ -18,6 +18,7 @@ interface ContactDialogProps {
   onOpenChange: (open: boolean) => void;
   contact?: Contact | null; // If provided, edit mode; otherwise, create mode
   onSuccess?: () => void;
+  initialPhoneNumber?: string;
 }
 
 export const ContactDialog = ({
@@ -25,6 +26,7 @@ export const ContactDialog = ({
   onOpenChange,
   contact,
   onSuccess,
+  initialPhoneNumber,
 }: ContactDialogProps) => {
   const createMutation = useCreateContact();
   const updateMutation = useUpdateContact();
@@ -77,10 +79,13 @@ export const ContactDialog = ({
           defaultValues={
             contact
               ? {
-                  name: contact.name,
-                  phone_number: contact.phone_number,
-                }
-              : undefined
+                name: contact.name,
+                phone_number: contact.phone_number,
+              }
+              : {
+                name: "",
+                phone_number: initialPhoneNumber || "",
+              }
           }
           onSubmit={handleSubmit}
           isLoading={isLoading}

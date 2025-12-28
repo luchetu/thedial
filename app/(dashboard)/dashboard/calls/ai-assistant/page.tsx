@@ -7,9 +7,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AskAIInterface } from "@/components/calls/AskAIInterface";
 import { TemplatePrompts } from "@/components/calls/TemplatePrompts";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TemplatePrompt } from "@/components/calls/TemplatePrompts";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 // Mock responses for design purposes
 const mockResponses: Record<string, string> = {
@@ -114,9 +113,11 @@ const mockResponses: Record<string, string> = {
 The AI will analyze the relevant call transcripts and provide detailed answers based on the actual conversation content.`,
 };
 
+import { askAI } from "@/features/ai/api";
+// ... imports ...
+
 export default function AIAssistantPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplatePrompt | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleSelectTemplate = (template: TemplatePrompt) => {
     setSelectedTemplate(template);
@@ -125,14 +126,7 @@ export default function AIAssistantPage() {
   };
 
   const handleAsk = async (prompt: string): Promise<string> => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    // Return mock response based on template or default
-    if (selectedTemplate) {
-      return mockResponses[selectedTemplate.id] || mockResponses.default;
-    }
-    return mockResponses.default;
+    return await askAI(prompt, selectedTemplate?.id);
   };
 
   return (
@@ -149,49 +143,29 @@ export default function AIAssistantPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex">
-        {/* Left Sidebar - Template Prompts */}
-        {isSidebarOpen && (
-          <div className="w-80 border-r bg-muted/5 p-6 overflow-auto">
-            <TemplatePrompts
-              onSelectTemplate={handleSelectTemplate}
-              selectedTemplateId={selectedTemplate?.id}
-            />
-          </div>
-        )}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Header */}
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+          <div className="flex-1" />
+        </header>
 
-        {/* Center - Chat Interface */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {/* Header */}
-          <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b">
-            <SidebarTrigger className="-ml-1" />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="ml-2"
-            >
-              {isSidebarOpen ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-            <h1 className="text-lg font-semibold ml-2">AI Assistant</h1>
-            <div className="flex-1" />
-          </header>
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6 space-y-6">
+          <TemplatePrompts
+            onSelectTemplate={handleSelectTemplate}
+            selectedTemplateId={selectedTemplate?.id}
+          />
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6">
-            <Card className="h-full flex flex-col">
-              <CardContent className="pt-6 flex-1 flex flex-col">
-                <AskAIInterface
-                  onAsk={handleAsk}
-                  initialPrompt={selectedTemplate?.prompt || ""}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="flex-1 flex flex-col min-h-[500px]">
+            <CardContent className="pt-6 flex-1 flex flex-col">
+              <AskAIInterface
+                onAsk={handleAsk}
+                initialPrompt={selectedTemplate?.prompt || ""}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

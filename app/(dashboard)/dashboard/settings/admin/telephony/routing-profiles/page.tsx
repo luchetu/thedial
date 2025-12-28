@@ -5,6 +5,8 @@ import { GitBranch, Plus, X } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,10 +25,20 @@ import { usePlans } from "@/features/admin/telephony/hooks/usePlans";
 import { useTrunks } from "@/features/admin/telephony/hooks/useTrunks";
 import { useDispatchRules } from "@/features/admin/telephony/hooks/useDispatchRules";
 import type { RoutingProfile } from "@/features/admin/telephony/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function RoutingProfilesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<RoutingProfile | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<RoutingProfile | null>(null);
   const [countryFilter, setCountryFilter] = useState("");
 
   const filters = useMemo(
@@ -46,7 +58,7 @@ export default function RoutingProfilesPage() {
   const deleteRoutingProfile = useDeleteRoutingProfile();
 
   const { data: plansData = [] } = usePlans();
-  
+
   // Fetch trunks using unified API
   const { data: outboundTrunksData = [] } = useTrunks({
     provider: "livekit",
@@ -56,9 +68,9 @@ export default function RoutingProfilesPage() {
     provider: "livekit",
     type: "livekit_inbound",
   });
-  
+
   const { data: dispatchRulesData = [] } = useDispatchRules();
-  
+
   // Convert unified trunks to the format expected by RoutingProfileDialog
   // The dialog expects OutboundTrunk[] and InboundTrunk[] format
   const outboundTrunksForDialog = useMemo(() => {
@@ -72,7 +84,7 @@ export default function RoutingProfilesPage() {
       twilioSipUsername: "",
     }));
   }, [outboundTrunksData]);
-  
+
   const inboundTrunksForDialog = useMemo(() => {
     return inboundTrunksData.map((trunk) => ({
       id: trunk.id, // Internal UUID
@@ -94,14 +106,18 @@ export default function RoutingProfilesPage() {
 
   const handleDeleteProfile = useCallback((profile: RoutingProfile) => {
     if (!profile?.id) return;
-    const confirmed = window.confirm(
-      `Are you sure you want to delete routing profile "${profile.name}"?`
-    );
-    if (!confirmed) return;
+    setProfileToDelete(profile);
+    setDeleteDialogOpen(true);
+  }, []);
 
-    deleteRoutingProfile.mutate(profile.id, {
+  const handleConfirmDelete = useCallback(() => {
+    if (!profileToDelete?.id) return;
+
+    deleteRoutingProfile.mutate(profileToDelete.id, {
       onSuccess: () => {
         toastSuccess("Routing profile deleted");
+        setDeleteDialogOpen(false);
+        setProfileToDelete(null);
       },
       onError: (mutationError) => {
         toastError(
@@ -109,7 +125,12 @@ export default function RoutingProfilesPage() {
         );
       },
     });
-  }, [deleteRoutingProfile]);
+  }, [profileToDelete, deleteRoutingProfile]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteDialogOpen(false);
+    setProfileToDelete(null);
+  }, []);
 
   const columns = useMemo(
     () =>
@@ -158,19 +179,25 @@ export default function RoutingProfilesPage() {
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Routing Profiles"
-          icon={GitBranch}
-          action={
-            <Button variant="secondary" onClick={handleCreate}>
-              <Plus className="size-4" />
-              Create profile
-            </Button>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <GitBranch className="h-6 w-6" />
+                  Routing Profiles
+                </h1>
+              </div>
+              <Button onClick={handleCreate} variant="secondary" className="flex items-center gap-2">
+                <Plus className="size-4" />
+                Create profile
+              </Button>
+            </div>
             {error && (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                 {error.message || "Failed to load routing profiles"}
@@ -260,6 +287,27 @@ export default function RoutingProfilesPage() {
         inboundTrunks={inboundTrunksForDialog}
         dispatchRules={dispatchRulesData}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Routing Profile</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the routing profile &quot;{profileToDelete?.name}&quot;?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDelete}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

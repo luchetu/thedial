@@ -20,6 +20,7 @@ import { useDeleteContact } from "@/features/contacts/hooks/useDeleteContact";
 import type { Contact } from "@/features/contacts/types";
 import { useRouter } from "next/navigation";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function ContactsListPage() {
   const router = useRouter();
@@ -78,11 +79,11 @@ export default function ContactsListPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <h1 className="text-lg font-semibold">Contacts</h1>
+          <PageBreadcrumb />
           <div className="flex-1" />
           <Button
             variant="secondary"
@@ -94,24 +95,24 @@ export default function ContactsListPage() {
           </Button>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">My Contacts</h2>
-                <p className="text-muted-foreground">
-                  Manage your client contacts and call history
-                </p>
-              </div>
-
-              <ContactList
-                onCall={handleCall}
-                onEdit={handleEditContact}
-                onDelete={handleDeleteContact}
-              />
-            </div>
+        {/* Fixed Title Section */}
+        <div className="flex-none px-6 pt-6 pb-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">My Contacts</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your client contacts and call history
+            </p>
           </div>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 min-h-0 px-6 pb-6">
+          <ContactList
+            onCall={handleCall}
+            onEdit={handleEditContact}
+            onDelete={handleDeleteContact}
+            className="h-full"
+          />
         </div>
       </div>
 

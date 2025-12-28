@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,9 +56,9 @@ export default function AdminUsagePage() {
     () =>
       userIdFilter
         ? {
-            userId: userIdFilter,
-            planCode: numberPlanFilter || undefined,
-          }
+          userId: userIdFilter,
+          planCode: numberPlanFilter || undefined,
+        }
         : null,
     [userIdFilter, numberPlanFilter]
   );
@@ -84,12 +86,12 @@ export default function AdminUsagePage() {
     () =>
       from && to
         ? {
-            from,
-            to,
-            limit: topNumbersLimit,
-            planCode: numberPlanFilter || undefined,
-            userId: userIdFilter || undefined,
-          }
+          from,
+          to,
+          limit: topNumbersLimit,
+          planCode: numberPlanFilter || undefined,
+          userId: userIdFilter || undefined,
+        }
         : null,
     [from, to, topNumbersLimit, numberPlanFilter, userIdFilter],
   );
@@ -141,33 +143,37 @@ export default function AdminUsagePage() {
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Usage"
-          icon={BarChart3}
-          action={
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant={rangeDays === 7 ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => handleRangeChange(7)}
-              >
-                Last 7 days
-              </Button>
-              <Button
-                type="button"
-                variant={rangeDays === 30 ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => handleRangeChange(30)}
-              >
-                Last 30 days
-              </Button>
-            </div>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-semibold flex items-center gap-2">
+                <BarChart3 className="h-6 w-6" />
+                Usage
+              </h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={rangeDays === 7 ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => handleRangeChange(7)}
+                >
+                  Last 7 days
+                </Button>
+                <Button
+                  type="button"
+                  variant={rangeDays === 30 ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => handleRangeChange(30)}
+                >
+                  Last 30 days
+                </Button>
+              </div>
+            </div>
             {/* KPI strip */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
@@ -531,13 +537,13 @@ export default function AdminUsagePage() {
                                 </td>
                                 <td className="px-3 py-2">
                                   <span className="font-mono text-xs">{row.userId}</span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

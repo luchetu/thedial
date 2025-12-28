@@ -8,6 +8,7 @@ import { AddPhoneNumberDialog } from "@/components/phone-numbers/AddPhoneNumberD
 import { usePortRequests } from "@/features/phone-numbers/hooks/usePortRequests";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function PortNumbersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -17,7 +18,7 @@ export default function PortNumbersPage() {
     <div className="flex h-screen">
       {/* Secondary menu */}
       <aside className="w-60 shrink-0 border-r bg-white flex flex-col">
-        <div className="px-4 pt-4 pb-2 border-b">
+        <div className="px-4 pt-4 pb-2">
           <h2 className="text-sm font-semibold text-muted-foreground">
             Phone
           </h2>
@@ -30,8 +31,9 @@ export default function PortNumbersPage() {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <h1 className="text-lg font-semibold">Port Numbers</h1>
         </header>
 

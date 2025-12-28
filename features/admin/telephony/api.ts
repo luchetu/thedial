@@ -17,9 +17,6 @@ import type {
   TwilioTrunk,
   CreateTwilioTrunkRequest,
   UpdateTwilioTrunkRequest,
-  OutboundTrunk,
-  CreateOutboundTrunkRequest,
-  UpdateOutboundTrunkRequest,
   InboundTrunk,
   CreateInboundTrunkRequest,
   UpdateInboundTrunkRequest,
@@ -210,11 +207,11 @@ export function getRoutingProfilesByTrunk(trunkId: string) {
 
 // Twilio Trunks (DEPRECATED - Use unified trunk API instead)
 export function getTwilioTrunks() {
-  return http<TwilioTrunk[]>(`/admin/settings/twilio/trunks`);
+  return http<TwilioTrunk[]>(`/admin/settings/telephony/provider/trunks`);
 }
 
 export function getTwilioTrunk(id: string) {
-  return http<TwilioTrunk>(`/admin/settings/twilio/trunks/${id}`).then((data) => {
+  return http<TwilioTrunk>(`/admin/settings/telephony/provider/trunks/${id}`).then((data) => {
     console.log("[API] getTwilioTrunk response:", data);
     console.log("[API] getTwilioTrunk.originationSipUri:", data?.originationSipUri);
     return data;
@@ -222,65 +219,65 @@ export function getTwilioTrunk(id: string) {
 }
 
 export function createTwilioTrunk(data: CreateTwilioTrunkRequest) {
-  return http<TwilioTrunk>(`/admin/settings/twilio/trunks`, {
+  return http<TwilioTrunk>(`/admin/settings/telephony/provider/trunks`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateTwilioTrunk(id: string, data: UpdateTwilioTrunkRequest) {
-  return http<TwilioTrunk>(`/admin/settings/twilio/trunks/${id}`, {
+  return http<TwilioTrunk>(`/admin/settings/telephony/provider/trunks/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteTwilioTrunk(id: string) {
-  return http<void>(`/admin/settings/twilio/trunks/${id}`, {
+  return http<void>(`/admin/settings/telephony/provider/trunks/${id}`, {
     method: "DELETE",
   });
 }
 
 // Twilio Credential Lists
 export function getTwilioCredentialLists() {
-  return http<TwilioCredentialList[]>(`/admin/settings/twilio/credential-lists`);
+  return http<TwilioCredentialList[]>(`/admin/settings/telephony/credential-lists`);
 }
 
 export function getTwilioCredentialList(sid: string) {
-  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists/${sid}`);
+  return http<TwilioCredentialList>(`/admin/settings/telephony/credential-lists/${sid}`);
 }
 
 export function createTwilioCredentialList(data: CreateTwilioCredentialListRequest) {
-  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists`, {
+  return http<TwilioCredentialList>(`/admin/settings/telephony/credential-lists`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateTwilioCredentialList(sid: string, data: UpdateTwilioCredentialListRequest) {
-  return http<TwilioCredentialList>(`/admin/settings/twilio/credential-lists/${sid}`, {
+  return http<TwilioCredentialList>(`/admin/settings/telephony/credential-lists/${sid}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteTwilioCredentialList(sid: string) {
-  return http<void>(`/admin/settings/twilio/credential-lists/${sid}`, {
+  return http<void>(`/admin/settings/telephony/credential-lists/${sid}`, {
     method: "DELETE",
   });
 }
 
 // Twilio Credentials (within credential lists)
 export function getTwilioCredentials(credentialListSid: string) {
-  return http<TwilioCredential[]>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials`);
+  return http<TwilioCredential[]>(`/admin/settings/telephony/credential-lists/${credentialListSid}/credentials`);
 }
 
 export function getTwilioCredential(credentialListSid: string, credentialSid: string) {
-  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`);
+  return http<TwilioCredential>(`/admin/settings/telephony/credential-lists/${credentialListSid}/credentials/${credentialSid}`);
 }
 
 export function createTwilioCredential(credentialListSid: string, data: CreateTwilioCredentialRequest) {
-  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials`, {
+  return http<TwilioCredential>(`/admin/settings/telephony/credential-lists/${credentialListSid}/credentials`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -291,29 +288,29 @@ export function updateTwilioCredential(
   credentialSid: string,
   data: UpdateTwilioCredentialRequest
 ) {
-  return http<TwilioCredential>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
+  return http<TwilioCredential>(`/admin/settings/telephony/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteTwilioCredential(credentialListSid: string, credentialSid: string) {
-  return http<void>(`/admin/settings/twilio/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
+  return http<void>(`/admin/settings/telephony/credential-lists/${credentialListSid}/credentials/${credentialSid}`, {
     method: "DELETE",
   });
 }
 
 // Twilio Origination URLs (per trunk)
 export function getTwilioOriginationURLs(trunkSid: string) {
-  return http<TwilioOriginationURL[]>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls`);
+  return http<TwilioOriginationURL[]>(`/admin/settings/telephony/provider/trunks/${trunkSid}/origination-urls`);
 }
 
 export function getTwilioOriginationURL(trunkSid: string, originationUrlSid: string) {
-  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`);
+  return http<TwilioOriginationURL>(`/admin/settings/telephony/provider/trunks/${trunkSid}/origination-urls/${originationUrlSid}`);
 }
 
 export function createTwilioOriginationURL(trunkSid: string, data: CreateTwilioOriginationURLRequest) {
-  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls`, {
+  return http<TwilioOriginationURL>(`/admin/settings/telephony/provider/trunks/${trunkSid}/origination-urls`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -324,39 +321,14 @@ export function updateTwilioOriginationURL(
   originationUrlSid: string,
   data: UpdateTwilioOriginationURLRequest
 ) {
-  return http<TwilioOriginationURL>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
+  return http<TwilioOriginationURL>(`/admin/settings/telephony/provider/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteTwilioOriginationURL(trunkSid: string, originationUrlSid: string) {
-  return http<void>(`/admin/settings/twilio/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
-    method: "DELETE",
-  });
-}
-
-// Outbound Trunks
-export function getOutboundTrunks() {
-  return http<OutboundTrunk[]>(`/admin/settings/trunks/outbound`);
-}
-
-export function createOutboundTrunk(data: CreateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/trunks/outbound`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export function updateOutboundTrunk(id: string, data: UpdateOutboundTrunkRequest) {
-  return http<OutboundTrunk>(`/admin/settings/trunks/outbound/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-}
-
-export function deleteOutboundTrunk(id: string) {
-  return http<void>(`/admin/settings/trunks/outbound/${id}`, {
+  return http<void>(`/admin/settings/telephony/provider/trunks/${trunkSid}/origination-urls/${originationUrlSid}`, {
     method: "DELETE",
   });
 }
@@ -413,11 +385,11 @@ export function deleteDispatchRule(id: string) {
 
 // Twilio Configuration
 export function getTwilioConfig() {
-  return http<TwilioConfig>(`/admin/settings/twilio`);
+  return http<TwilioConfig>(`/admin/settings/telephony/provider`);
 }
 
 export function updateTwilioConfig(data: UpdateTwilioConfigRequest) {
-  return http<TwilioConfig>(`/admin/settings/twilio`, {
+  return http<TwilioConfig>(`/admin/settings/telephony/provider`, {
     method: "PUT",
     body: JSON.stringify(data),
   });

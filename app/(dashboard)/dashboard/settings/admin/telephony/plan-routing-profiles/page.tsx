@@ -5,11 +5,14 @@ import { Link2, Plus, X } from "lucide-react";
 import { AdminTelephonySecondaryMenu } from "@/features/admin/telephony/components/AdminTelephonySecondaryMenu";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/ui/page-header";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
+import { WaveLoader } from "@/components/ui/wave-loader";
 import { StatsGrid } from "@/components/ui/stat-card";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { getPlanRoutingProfileColumns } from "@/features/admin/telephony/components/plan-routing-profiles/columns";
@@ -125,19 +128,26 @@ export default function PlanRoutingProfilesPage() {
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <PageHeader
-          title="Plan Routing Profile Mappings"
-          icon={Link2}
-          action={
-            <Button variant="secondary" onClick={handleCreate}>
-              <Plus className="size-4" />
-              Create mapping
-            </Button>
-          }
-        />
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
+        </header>
 
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                  <Link2 className="h-6 w-6" />
+                  Plan Routing Profile Mappings
+                </h1>
+              </div>
+              <Button onClick={handleCreate} variant="secondary" className="flex items-center gap-2">
+                <Plus className="size-4" />
+                Create mapping
+              </Button>
+            </div>
+
             {error && (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                 {error.message || "Failed to load plan routing profile mappings"}
@@ -190,31 +200,39 @@ export default function PlanRoutingProfilesPage() {
                   <h3 className="text-lg font-medium">Plan routing profile mappings</h3>
                 </div>
 
-                <DataTable
-                  data={mappings}
-                  // @ts-expect-error - TanStack Table column type inference limitation
-                  columns={columns}
-                  emptyMessage="No plan routing profile mappings found."
-                  isLoading={isLoading}
-                />
+                {isLoading && mappings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+                    <WaveLoader className="text-primary" />
+                    <span>Loading mappings…</span>
+                  </div>
+                ) : (
+                  <DataTable
+                    data={mappings}
+                    // @ts-expect-error - TanStack Table column type inference limitation
+                    columns={columns}
+                    emptyMessage={
+                      isLoading ? "Loading mappings…" : "No plan routing profile mappings found."
+                    }
+                  />
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <PlanRoutingProfileDialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setEditingMapping(null);
-          }
-        }}
-        mapping={editingMapping}
-        plans={plansData}
-        routingProfiles={routingProfilesData}
-      />
+        <PlanRoutingProfileDialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setEditingMapping(null);
+            }
+          }}
+          mapping={editingMapping}
+          plans={plansData}
+          routingProfiles={routingProfilesData}
+        />
+      </div>
     </div>
   );
 }

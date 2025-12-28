@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings, User, Bell, Shield, Trash2 } from "lucide-react";
+import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
 
 export default function ContactSettingsPage() {
   return (
@@ -21,15 +22,16 @@ export default function ContactSettingsPage() {
           <ContactsSecondaryMenu />
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
+          <PageBreadcrumb />
           <div className="flex-1" />
         </header>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
@@ -38,7 +40,7 @@ export default function ContactSettingsPage() {
                 <h2 className="text-xl font-semibold mb-2">Contact Settings</h2>
                 <p className="text-muted-foreground">Configure how contacts are managed and displayed</p>
               </div>
-              
+
               {/* Contact Display Settings */}
               <Card>
                 <CardHeader>
