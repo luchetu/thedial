@@ -148,8 +148,8 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {summary && summary.calls.total > 0
-                        ? `${((summary.calls.answered / summary.calls.total) * 100).toFixed(0)}%`
+                      {summary && (summary.calls.total || 0) > 0
+                        ? `${(((summary.calls.answered || 0) / (summary.calls.total || 1)) * 100).toFixed(0)}%`
                         : "—"}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">

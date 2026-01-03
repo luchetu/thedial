@@ -68,8 +68,17 @@ export default function PhoneSettingsPage() {
   const getTypeBadgeLabel = (phoneNumber: UserPhoneNumber) => {
     const provider = phoneNumber.provider;
     const isDial = provider === "twilio" || provider === "vonage" || provider === "livekit";
-    return isDial ? "Dial" : "Caller ID";
+    return isDial ? "Dial" : "Verified";
   };
+
+  const getTypeBadgeColor = (phoneNumber: UserPhoneNumber) => {
+    const label = getTypeBadgeLabel(phoneNumber);
+    if (label === "Dial") {
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    }
+    return "bg-purple-100 text-purple-700 border-purple-200";
+  }
+
 
   return (
     <div className="flex h-screen">
@@ -176,7 +185,7 @@ export default function PhoneSettingsPage() {
                                   </Badge>
                                   <Badge
                                     variant="default"
-                                    className="text-xs bg-blue-100 text-blue-700 border-blue-200"
+                                    className={`text-xs ${getTypeBadgeColor(phoneNumber)}`}
                                   >
                                     {getTypeBadgeLabel(phoneNumber)}
                                   </Badge>

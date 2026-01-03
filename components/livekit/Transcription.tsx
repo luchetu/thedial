@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRoomContext } from "@livekit/components-react";
 import { Participant } from "livekit-client";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, getFriendlyName } from "@/lib/utils";
 
 interface TranscriptionSegment {
     id: string;
@@ -36,14 +36,21 @@ export function Transcription({ className }: TranscriptionProps) {
 
             if (!isTranscription) return;
 
+            console.log("📝 [Transcription] Stream received from:", participant?.identity);
+
             const text = await reader.readAll();
+            console.log("📝 [Transcription] Text received:", text);
+
             const isFinal = attrs["lk.transcription_final"] === "true";
             const segmentId = attrs["lk.segment_id"] || crypto.randomUUID();
             const timestamp = Date.now(); // Stream doesn't always have exact timestamp, use receive time
 
             // Determine speaker
             const pIdentity = participant?.identity || "unknown";
-            const pName = participant?.name || "Unknown";
+            // Use helper to get nice name (e.g. "Client (415)..." or "Dial AI")
+            const pName = participant ? getFriendlyName(participant) : "Unknown";
+
+            console.log("📝 [Transcription] Processing segment:", { pName, text, isFinal });
 
             setSegments((prev) => {
                 const updated = [...prev];

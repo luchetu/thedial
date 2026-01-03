@@ -19,10 +19,10 @@ const phoneMenuItems = [
     description: "Numbers you can dial from",
   },
   {
-    title: "Caller ID Numbers",
+    title: "Verified Numbers",
     href: "/dashboard/settings/phone/caller-id",
     icon: PhoneForwarded,
-    description: "External numbers used as caller ID",
+    description: "Verified numbers for Caller ID & AI Access",
   },
   {
     title: "Port Numbers",

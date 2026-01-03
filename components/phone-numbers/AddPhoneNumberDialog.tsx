@@ -35,8 +35,8 @@ const PHONE_NUMBER_OPTIONS = [
   },
   {
     id: "verify" as const,
-    title: "Add Existing Number",
-    description: "Add your existing number (verification required)",
+    title: "Verified Number",
+    description: "Verify your personal number for Inbound Access & Caller ID",
     icon: Smartphone,
     badge: undefined,
   },

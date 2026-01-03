@@ -2,6 +2,7 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { AskAIAssistant } from "@/components/features/ai/AskAIAssistant"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 
 export function ProtectedDashboard({ children }: { children: React.ReactNode }) {
@@ -12,6 +13,7 @@ export function ProtectedDashboard({ children }: { children: React.ReactNode }) 
         <main className="flex-1 bg-sidebar">
           {children}
         </main>
+        <AskAIAssistant />
       </SidebarProvider>
     </AuthGuard>
   )

@@ -95,7 +95,7 @@ export default function CallerIdNumbersPage() {
             onClick={() => setIsDialogOpen(true)}
             className="flex items-center gap-2"
           >
-            Add Caller ID
+            Add Verified Number
           </Button>
         </header>
 
@@ -113,7 +113,7 @@ export default function CallerIdNumbersPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 text-destructive">
                     <XCircle className="h-5 w-5" />
-                    <p>Failed to load caller ID numbers. Please try again.</p>
+                    <p>Failed to load verified numbers. Please try again.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -123,10 +123,10 @@ export default function CallerIdNumbersPage() {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">
-                    Caller ID Numbers
+                    Verified Numbers
                   </h2>
                   <p className="text-muted-foreground">
-                    External numbers you have verified and can use as caller ID.
+                    External numbers verified for <strong>Outbound Caller ID</strong> and <strong>Inbound AI Access</strong>.
                   </p>
                 </div>
 
@@ -148,7 +148,7 @@ export default function CallerIdNumbersPage() {
                   <Card>
                     <CardContent className="p-6">
                       <p className="text-sm text-muted-foreground">
-                        No caller ID numbers in this status.
+                        No verified numbers in this status.
                       </p>
                     </CardContent>
                   </Card>
@@ -182,7 +182,7 @@ export default function CallerIdNumbersPage() {
                                   variant="default"
                                   className="text-xs bg-blue-100 text-blue-700 border-blue-200"
                                 >
-                                  Caller ID
+                                  Verified
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-4 mt-1">

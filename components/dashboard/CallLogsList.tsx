@@ -57,7 +57,7 @@ import { TranscriptView } from "@/components/dashboard/TranscriptView"
 import { CallAIChat } from "@/components/dashboard/CallAIChat"
 import { DataTable, type ColumnDef } from "@/components/ui/data-table"
 import { type SortingState, type ColumnFiltersState } from "@tanstack/react-table"
-import { DatePickerWithRange } from "@/components/ui/date-range-picker"
+import { DateTimePickerWithRange } from "@/components/ui/datetime-range-picker"
 import type { DateRange } from "react-day-picker"
 
 const statusConfig: Record<string, { label: string; color: string; iconColor: string }> = {
@@ -500,17 +500,25 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-sm border-zinc-200/50 shadow-xl">
+              <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-sm border-zinc-200/50 shadow-xl w-48">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+                {/* AI & Insights */}
+                <DropdownMenuItem onClick={() => {
+                  // Open AI Assistant context
+                  // For now we just open the sheet, but ideally this triggers the global assistant
+                  setViewTranscriptCall(call)
+                }}>
+                  <Sparkles className="mr-2 h-4 w-4 text-purple-500" /> Ask AI
+                </DropdownMenuItem>
+
                 {call.status !== "missed" && (
                   <DropdownMenuItem onClick={() => setViewTranscriptCall(call)}>
                     <FileText className="mr-2 h-4 w-4" /> View Transcript
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(call.id)}>
-                  Copy Call ID
-                </DropdownMenuItem>
+
+                {/* Communication */}
                 {displayPhoneNumber && (
                   <DropdownMenuItem asChild>
                     <Link href={`/dashboard/dial?number=${encodeURIComponent(displayPhoneNumber)}`}>
@@ -518,6 +526,20 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
+
+                {/* Data & Contact */}
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(displayPhoneNumber || "")}>
+                  <div className="flex items-center">
+                    <Phone className="mr-2 h-4 w-4" /> Copy Number
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(call.id)}>
+                  <div className="flex items-center">
+                    <Search className="mr-2 h-4 w-4" /> Copy Call ID
+                  </div>
+                </DropdownMenuItem>
+
                 {!hasContact && displayPhoneNumber && (
                   <DropdownMenuItem onClick={() => {
                     setAddContactDialogOpen(call.id)
@@ -526,6 +548,23 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                     <UserPlus className="mr-2 h-4 w-4" /> Add Contact
                   </DropdownMenuItem>
                 )}
+
+                {hasContact && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/contacts?q=${encodeURIComponent(displayPhoneNumber || "")}`}>
+                      <div className="flex items-center">
+                        <UserPlus className="mr-2 h-4 w-4" /> View Profile
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                {/* Safety */}
+                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                  <div className="flex items-center">
+                    <ArrowUpDown className="mr-2 h-4 w-4 rotate-45" /> Block Number
+                  </div>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -548,7 +587,7 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
               className="pl-10 bg-white/50 backdrop-blur-sm"
             />
           </div>
-          <DatePickerWithRange
+          <DateTimePickerWithRange
             date={dateRange}
             setDate={setDateRange}
           />
