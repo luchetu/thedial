@@ -68,3 +68,15 @@ export type TranscriptionSegment = {
 export async function getCallTranscript(callId: string): Promise<TranscriptionSegment[]> {
   return http<TranscriptionSegment[]>(`/calls/${callId}/transcript`);
 }
+
+export type AskAIResponse = {
+  response: string;
+  tokens_used: number;
+};
+
+export async function askCallAI(prompt: string, callId?: string): Promise<AskAIResponse> {
+  return http<AskAIResponse>("/ai/ask", {
+    method: "POST",
+    body: JSON.stringify({ prompt, callId }),
+  });
+}

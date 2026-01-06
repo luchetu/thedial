@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react"
 import type { CallRecord } from "@/features/calls/api"
+import { askCallAI } from "@/features/calls/api"
+import { toast } from "sonner"
 
 interface Message {
     id: string
@@ -52,28 +54,30 @@ export function CallAIChat({ call }: CallAIChatProps) {
         setInput("")
         setIsLoading(true)
 
-        // Simulate AI delay and response
-        setTimeout(() => {
-            let aiContent = "I can certainly help with that based on the transcript."
-
-            if (input.toLowerCase().includes("summar")) {
-                aiContent = "Here's a summary of the call:\n- The customer (Alice) reported an issue with her billing statement for October.\n- Agent (Bob) verified her identity and found a double charge of $45.\n- Refund was processed successfully.\n- Customer was satisfied with the resolution."
-            } else if (input.toLowerCase().includes("angry") || input.toLowerCase().includes("sentiment")) {
-                aiContent = "Based on the transcript, the customer's sentiment started as **Negative** (Frustrated) but shifted to **Positive** by the end of the call after the refund was confirmed. No angry outbursts were detected."
-            } else if (input.toLowerCase().includes("email") || input.toLowerCase().includes("follow")) {
-                aiContent = "Subject: Refund Confirmation - Ticket #1234\n\nHi Alice,\n\nIt was great speaking with you. I've processed the refund of $45 for the duplicate charge on your October statement. You should see it within 3-5 business days.\n\nLet us know if you need anything else!\n\nBest,\nBob"
-            }
+        try {
+            const result = await askCallAI(input, call.id)
 
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "assistant",
-                content: aiContent,
+                content: result.response,
                 timestamp: new Date(),
             }
 
             setMessages((prev) => [...prev, aiMsg])
+        } catch (err) {
+            console.error(err)
+            toast.error("Failed to get AI response")
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: "Sorry, I encountered an error processing your request. Please try again.",
+                timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, errorMsg])
+        } finally {
             setIsLoading(false)
-        }, 1500)
+        }
     }
 
     return (
@@ -115,8 +119,8 @@ export function CallAIChat({ call }: CallAIChatProps) {
                             </Avatar>
                             <div
                                 className={`rounded-lg p-3 max-w-[80%] text-sm whitespace-pre-wrap ${m.role === "user"
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
                                     }`}
                             >
                                 {m.content}
