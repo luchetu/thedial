@@ -5,9 +5,10 @@ import { format } from "date-fns";
 
 interface TranscriptViewProps {
     call: CallRecord;
+    resolveContactName?: (phoneNumber: string) => string | null;
 }
 
-export function TranscriptView({ call }: TranscriptViewProps) {
+export function TranscriptView({ call, resolveContactName }: TranscriptViewProps) {
     const { data: segments, isLoading, isError } = useCallTranscript(call.id);
 
     if (isLoading) {
@@ -49,8 +50,40 @@ export function TranscriptView({ call }: TranscriptViewProps) {
                 {segments.map((segment) => {
                     // Determine styling based on participant
                     // Heuristic: If identity starts with "sip_", it's likely the external caller (Customer)
-                    // Otherwise, it's the internal user (Agent)
-                    const isAgent = !segment.participantIdentity?.startsWith("sip_");
+                    // otherwise check if it matches the other party's phone number
+                    // But in our bridge logic:
+                    //   - We seeded "SourceE164" (which might be the caller) -> "Caller"
+                    //   - "DestinationE164" -> "Callee"
+                    // But identities are now Phone Numbers.
+
+                    // Logic:
+                    // If my user ID matches the call owner, I am the "Agent" (though in bridge I might be one side).
+                    // Typically call UI shows "Me" vs "Them".
+                    // For now, let's just resolve names.
+
+                    // Identity is now a phone number string (e.g. "+1555...")
+                    const identity = segment.participantIdentity || "Unknown";
+                    const resolvedName = resolveContactName?.(identity);
+                    const displayName = resolvedName ? `${resolvedName} (${identity})` : identity;
+
+                    // Improved heuristic for "Is this me/agent?":
+                    // If the identity matches the destination of the INBOUND call, it's likely the system/agent side if we assume inbound.
+                    // But simpler: if it's NOT the external party.
+                    // Let's stick to the previous heuristic or just assume left/right based on simple "sip" check is insufficient now.
+                    // For now, if we don't have a reliable "Me" check, we might just list them.
+                    // But previously: `const isAgent = !segment.participantIdentity?.startsWith("sip_");`
+                    // Now identities are E.164.
+                    // Let's assume if it matches the Call's SourceE164 on an Inbound Call -> It is the CONTACT (Left).
+                    // If it matches DestinationE164 on Inbound Call -> It is US (Right).
+
+                    let isAgent = false;
+                    if (call.direction === "inbound") {
+                        // Inbound: Source is Caller (Left), Dest is Agent (Right)
+                        if (segment.participantIdentity === call.destinationE164) isAgent = true;
+                    } else {
+                        // Outbound: Source is Agent (Right), Dest is Callee (Left)
+                        if (segment.participantIdentity === call.sourceE164) isAgent = true;
+                    }
 
                     const timeStr = segment.startTime
                         ? new Date(segment.startTime * 1000).toISOString().substr(14, 5) // mm:ss
@@ -60,19 +93,13 @@ export function TranscriptView({ call }: TranscriptViewProps) {
                         <div key={segment.id} className={`flex gap-3 ${isAgent ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex-1 ${isAgent ? 'text-right' : ''}`}>
                                 <div className="flex items-center gap-2 mb-1 justify-end">
-                                    {/* For Agent, we want justify-end, but the flex-row-reverse handles the container flipping.
-                        However, the text inside needs alignment.
-                        Actually, flex-row-reverse flips the order of Avatar/Content. 
-                        Let's check the inner alignment.
-                     */}
-
                                     <span className={`text-xs font-medium text-muted-foreground w-full ${isAgent ? 'text-right' : 'text-left'}`}>
-                                        {segment.participantIdentity || "Unknown"} <span className="opacity-50">• {timeStr}</span>
+                                        {displayName} <span className="opacity-50">• {timeStr}</span>
                                     </span>
                                 </div>
                                 <div className={`inline-block p-3 rounded-lg text-left ${isAgent
-                                    ? 'bg-primary/10 text-primary-foreground'
-                                    : 'bg-muted/50'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-foreground'
                                     }`}>
                                     <p className="text-sm whitespace-pre-wrap">{segment.text}</p>
                                 </div>

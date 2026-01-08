@@ -674,9 +674,12 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                     </div>
 
                     {/* Transcript with Timeline */}
-                    {transcription && (
-                      <TranscriptView call={call} />
-                    )}
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                      <TranscriptView
+                        call={call}
+                        resolveContactName={(phone) => getContactName(phone)}
+                      />
+                    </div>
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-4 border-t">
