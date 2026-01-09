@@ -81,7 +81,7 @@ export function CallAIChat({ call }: CallAIChatProps) {
     }
 
     return (
-        <div className="flex flex-col h-full bg-background border-l">
+        <div className="flex flex-col flex-1 min-h-0 w-full bg-background border-l overflow-hidden">
             {/* Header */}
             <div className="p-4 border-b flex items-center justify-between bg-muted/30">
                 <div className="flex items-center gap-2">

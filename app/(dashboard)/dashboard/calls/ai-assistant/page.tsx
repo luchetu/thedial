@@ -9,8 +9,9 @@ import { TemplatePrompts } from "@/components/calls/TemplatePrompts";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TemplatePrompt } from "@/components/calls/TemplatePrompts";
 import { PageBreadcrumb } from "@/components/ui/page-breadcrumb";
+import { askAI, askAIStream } from "@/features/ai/api";
 
-// Mock responses for design purposes
+// Mock responses for design purposes (kept for reference or fallback if needed)
 const mockResponses: Record<string, string> = {
   summarize: `## Call Summary
 
@@ -113,9 +114,6 @@ const mockResponses: Record<string, string> = {
 The AI will analyze the relevant call transcripts and provide detailed answers based on the actual conversation content.`,
 };
 
-import { askAI } from "@/features/ai/api";
-// ... imports ...
-
 export default function AIAssistantPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplatePrompt | null>(null);
 
@@ -127,6 +125,10 @@ export default function AIAssistantPage() {
 
   const handleAsk = async (prompt: string): Promise<string> => {
     return await askAI(prompt, selectedTemplate?.id);
+  };
+
+  const handleAskStream = async (prompt: string, onChunk: (chunk: string) => void): Promise<void> => {
+    await askAIStream(prompt, onChunk, selectedTemplate?.id);
   };
 
   return (
@@ -162,6 +164,7 @@ export default function AIAssistantPage() {
             <CardContent className="pt-6 flex-1 flex flex-col">
               <AskAIInterface
                 onAsk={handleAsk}
+                onAskStream={handleAskStream}
                 initialPrompt={selectedTemplate?.prompt || ""}
               />
             </CardContent>
@@ -171,4 +174,3 @@ export default function AIAssistantPage() {
     </div>
   );
 }
-

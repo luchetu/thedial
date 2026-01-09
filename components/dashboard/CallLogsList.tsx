@@ -630,7 +630,7 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
 
         {/* Transcript Sheet */}
         <Sheet open={!!viewTranscriptCall} onOpenChange={(open) => !open && setViewTranscriptCall(null)}>
-          <SheetContent className="w-full sm:w-[600px] lg:w-[700px] overflow-y-auto">
+          <SheetContent className="w-full sm:w-[600px] lg:w-[700px] flex flex-col h-full p-0 gap-0">
             {viewTranscriptCall && (() => {
               const call = viewTranscriptCall
               const dir = call.direction || "inbound"
@@ -646,15 +646,15 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
 
               return (
                 <>
-                  <SheetHeader>
+                  <SheetHeader className="p-6 border-b">
                     <SheetTitle>Call Transcript</SheetTitle>
                     <SheetDescription>
                       {displayName} {contactName && displayPhoneNumber && `(${displayPhoneNumber})`} • {timestamp} • {duration}
                     </SheetDescription>
                   </SheetHeader>
-                  <div className="mt-6 space-y-6 px-4">
+                  <div className="flex-1 flex flex-col min-h-0 p-6 gap-6 overflow-hidden">
                     {/* Call Information Summary */}
-                    <div className="flex items-center gap-4 text-sm pb-4 border-b">
+                    <div className="flex items-center gap-4 text-sm pb-4 border-b shrink-0">
                       <div className="flex items-center gap-2">
                         <DirectionIcon className={`h-4 w-4 ${directionConfig[dir]?.color ?? "text-blue-600"}`} />
                         <span className="text-muted-foreground">{directionConfig[dir]?.label || dir}</span>
@@ -674,7 +674,7 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                     </div>
 
                     {/* Transcript with Timeline */}
-                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    <div className="flex-1 min-h-0 flex flex-col">
                       <TranscriptView
                         call={call}
                         resolveContactName={(phone) => getContactName(phone)}
@@ -682,7 +682,7 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-4 border-t">
+                    <div className="flex gap-2 pt-4 border-t shrink-0">
                       {call.status !== "missed" && (
                         <Sheet>
                           <SheetTrigger asChild>

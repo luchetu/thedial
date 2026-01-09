@@ -10,14 +10,16 @@ import { cn } from "@/lib/utils";
 
 interface AskAIInterfaceProps {
   onAsk?: (prompt: string) => Promise<string>;
+  onAskStream?: (prompt: string, onChunk: (chunk: string) => void) => Promise<void>;
   initialPrompt?: string;
 }
 
-export function AskAIInterface({ onAsk, initialPrompt = "" }: AskAIInterfaceProps) {
+export function AskAIInterface({ onAsk, onAskStream, initialPrompt = "" }: AskAIInterfaceProps) {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [response, setResponse] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Update prompt when initialPrompt changes (template selection)
   React.useEffect(() => {
@@ -26,15 +28,26 @@ export function AskAIInterface({ onAsk, initialPrompt = "" }: AskAIInterfaceProp
     setResponse(null);
   }, [initialPrompt]);
 
+  // Auto-scroll to bottom when response updates
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [response]);
+
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
     setIsLoading(true);
     setError(null);
-    setResponse(null);
+    setResponse(""); // Start with empty string for streaming
 
     try {
-      if (onAsk) {
+      if (onAskStream) {
+        await onAskStream(prompt, (chunk) => {
+          setResponse((prev) => (prev || "") + chunk);
+        });
+      } else if (onAsk) {
         const result = await onAsk(prompt);
         setResponse(result);
       } else {
@@ -44,6 +57,8 @@ export function AskAIInterface({ onAsk, initialPrompt = "" }: AskAIInterfaceProp
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      // If error occurs during stream, we might have partial response. 
+      // Keep it visible but show error too?
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +109,7 @@ export function AskAIInterface({ onAsk, initialPrompt = "" }: AskAIInterfaceProp
 
       {/* Error State */}
       {error && (
-        <Card className="border-destructive">
+        <Card className="border-destructive shrink-0">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
@@ -106,10 +121,11 @@ export function AskAIInterface({ onAsk, initialPrompt = "" }: AskAIInterfaceProp
 
       {/* Response Area */}
       {response && (
-        <Card className="flex-1 flex flex-col">
-          <CardContent className="pt-6 flex-1 overflow-auto">
+        <Card className="flex-1 flex flex-col min-h-0">
+          <CardContent className="pt-6 flex-1 overflow-auto" ref={scrollRef}>
             <div className="prose prose-sm max-w-none dark:prose-invert">
               <div className="whitespace-pre-wrap">{response}</div>
+              {isLoading && <span className="inline-block w-2 H-4 align-middle ml-1 animate-pulse">▋</span>}
             </div>
           </CardContent>
         </Card>
