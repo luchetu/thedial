@@ -29,6 +29,7 @@ export interface CreateOutboundCallRequest {
   phoneNumberId: string; // ID of the user's phone number to use for calling
   agentName?: string;
   userIdentity?: string;
+  channel?: "pstn" | "whatsapp";
 }
 
 export interface OutboundCallResponse {

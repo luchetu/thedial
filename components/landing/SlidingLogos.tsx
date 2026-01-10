@@ -25,7 +25,7 @@ export default function SlidingLogos() {
   return (
     <section className="w-full py-8 md:py-12">
       <div className="mx-auto w-full max-w-6xl px-4">
-        <p className="text-center text-sm text-muted-foreground mb-8">The technologies we use to make thedial possible</p>
+        <p className="text-center text-sm text-muted-foreground mb-8">Partners</p>
         <div className="overflow-hidden">
           <div className="flex animate-slide gap-8 md:gap-12">
             {logos.map((logo, index) => (

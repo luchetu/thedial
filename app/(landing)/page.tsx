@@ -8,11 +8,10 @@ export default function Home() {
       <main className="mx-auto w-full max-w-6xl px-4 pt-8 md:pt-10 pb-10 md:pb-12">
         <section className="flex flex-col items-center text-center">
           <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            Turn every client call into searchable notes — without changing how you call.
-
+            Bring AI into Your Work and Business Calls
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-7 text-muted-foreground">
-            Automatically record, transcribe, and organize your business calls using AI. Works seamlessly with iPhone, Android, and VoIP. Keep your number. Keep your workflow. Get your time back.
+            ...without changing the Way you call. Your attention belongs to your client, not your notebook. Stay fully present to build trust and close deals, knowing that every critical detail is being captured for you.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
