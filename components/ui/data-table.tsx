@@ -42,13 +42,15 @@ export function DataTable<TData, TValue = unknown>({
   onTableInit,
   isLoading = false,
   skeletonRows = 5,
-}: DataTableProps<TData, TValue>) {
+  manualFiltering = false,
+}: DataTableProps<TData, TValue> & { manualFiltering?: boolean }) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    getFilteredRowModel: manualFiltering ? undefined : getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    manualFiltering,
     state: {
       columnFilters,
       sorting,

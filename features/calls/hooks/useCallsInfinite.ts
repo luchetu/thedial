@@ -10,6 +10,7 @@ const PAGE_SIZE = 50;
 export function useCallsInfinite(params?: {
   direction?: string;
   status?: string;
+  channel?: string;
   fromDate?: string;
   toDate?: string;
 }) {

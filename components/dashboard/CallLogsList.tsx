@@ -37,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Phone, PhoneIncoming, PhoneOutgoing, Clock, FileText, Play, Pause, Sparkles, Search, Volume2, UserPlus, StickyNote, PhoneCall, MoreHorizontal, type LucideIcon } from "lucide-react"
+import { Phone, PhoneIncoming, PhoneOutgoing, Clock, FileText, Play, Pause, Sparkles, Search, Volume2, UserPlus, StickyNote, PhoneCall, MoreHorizontal, MessageCircle, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useCallsInfinite } from "@/features/calls/hooks/useCallsInfinite"
@@ -138,11 +138,13 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
 
   const createContactMutation = useCreateContact()
 
-  // Extract status filter from columnFilters
+  // Extract status and channel filter from columnFilters
   const statusFilterValue = (columnFilters.find(f => f.id === "status")?.value as string[])?.[0]
+  const channelFilterValue = (columnFilters.find(f => f.id === "channel")?.value as string[])?.[0]
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useCallsInfinite({
     status: statusFilterValue,
+    channel: channelFilterValue,
     fromDate: dateRange?.from?.toISOString(),
     toDate: dateRange?.to?.toISOString(),
   })
@@ -166,7 +168,10 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
   const getContactName = useMemo(() => {
     return (phoneNumber?: string | null): string | null => {
       if (!phoneNumber) return null
-      const normalized = phoneNumber.replace(/[\s\-\(\)]/g, "")
+      let normalized = phoneNumber.replace(/[\s\-\(\)]/g, "")
+      if (normalized.startsWith("whatsapp:")) {
+        normalized = normalized.replace("whatsapp:", "")
+      }
       return contactMap.get(normalized) || null
     }
   }, [contactMap])
@@ -334,16 +339,27 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
       cell: ({ row }) => {
         const call = row.original
         const dir = call.direction || "inbound"
-        const DirectionIcon = directionConfig[dir]?.icon ?? PhoneIncoming
+
+        // Detect channel from destination E164 prefix
+        const isWhatsApp = (call.destinationE164?.startsWith("whatsapp:") || call.sourceE164?.startsWith("whatsapp:"))
+
+        const DirectionIcon = isWhatsApp ? MessageCircle : (directionConfig[dir]?.icon ?? PhoneIncoming)
         const statusInfo = statusConfig[call.status] ?? statusConfig.answered
-        const displayPhoneNumber = dir === "inbound" ? call.sourceE164 : call.destinationE164
+
+        let displayPhoneNumber = dir === "inbound" ? call.sourceE164 : call.destinationE164
+
+        // Strip whatsapp: prefix for display
+        if (displayPhoneNumber?.startsWith("whatsapp:")) {
+          displayPhoneNumber = displayPhoneNumber.replace("whatsapp:", "")
+        }
+
         const contactName = dir === "inbound" ? call.sourceContactName : call.destinationContactName
         const fallbackContactName = contactName || getContactName(displayPhoneNumber)
         const displayName = fallbackContactName || displayPhoneNumber || "Unknown"
 
         return (
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full bg-slate-100 ${statusInfo.iconColor}`}>
+            <div className={cn("p-2 rounded-full", isWhatsApp ? "bg-green-100 text-green-600" : `bg-slate-100 ${statusInfo.iconColor}`)}>
               <DirectionIcon className="h-4 w-4" />
             </div>
             <div>
@@ -353,6 +369,91 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
               )}
             </div>
           </div>
+        )
+      }
+    },
+    {
+      accessorKey: "direction",
+      header: "Direction",
+      cell: ({ row }) => {
+        const dir = row.original.direction || "inbound"
+        return (
+          <span className="capitalize">{dir === "inbound" ? "Incoming" : "Outgoing"}</span>
+        )
+      }
+    },
+    {
+      id: "channel",
+      accessorKey: "channel",
+      header: ({ column }) => {
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent">
+                <span>Channel</span>
+                {column.getFilterValue() ? <Filter className="ml-2 h-3.5 w-3.5 text-primary" /> : <Filter className="ml-2 h-3.5 w-3.5 text-muted-foreground" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Filter channel..." />
+                <CommandList>
+                  <CommandEmpty>No results found.</CommandEmpty>
+                  <CommandGroup>
+                    {[{ value: "whatsapp", label: "WhatsApp" }, { value: "phone", label: "Phone" }].map((bg) => {
+                      const isSelected = (column.getFilterValue() as string[])?.includes(bg.value)
+                      return (
+                        <CommandItem
+                          key={bg.value}
+                          onSelect={() => {
+                            if (isSelected) {
+                              column.setFilterValue(undefined)
+                            } else {
+                              column.setFilterValue([bg.value])
+                            }
+                          }}
+                        >
+                          <div
+                            className={cn(
+                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                              isSelected
+                                ? "bg-primary text-primary-foreground"
+                                : "opacity-50 [&_svg]:invisible"
+                            )}
+                          >
+                            <Check className={cn("h-4 w-4")} />
+                          </div>
+                          <span>{bg.label}</span>
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
+                  {!!column.getFilterValue() && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => column.setFilterValue(undefined)}
+                          className="justify-center text-center"
+                        >
+                          Clear filters
+                        </CommandItem>
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        )
+      },
+      cell: ({ row }) => {
+        const call = row.original
+        const isWhatsApp = (call.destinationE164?.startsWith("whatsapp:") || call.sourceE164?.startsWith("whatsapp:"))
+        return (
+          <Badge variant="secondary" className={cn("font-normal capitalize", isWhatsApp ? "bg-green-100 text-green-700 hover:bg-green-100/80" : "bg-slate-100 text-slate-700 hover:bg-slate-100/80")}>
+            {isWhatsApp ? "WhatsApp" : "Phone"}
+          </Badge>
         )
       }
     },
@@ -602,6 +703,7 @@ export function CallLogsList({ initialFilter, className }: CallLogsListProps) {
             onSortingChange={setSorting}
             columnFilters={columnFilters}
             onColumnFiltersChange={setColumnFilters}
+            manualFiltering={true}
           />
 
           <div ref={loadMoreRef} className="h-10 flex items-center justify-center mt-4">

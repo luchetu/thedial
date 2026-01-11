@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Clock, PhoneIncoming, PhoneOutgoing, PhoneMissed, Loader2 } from "lucide-react";
+import { Clock, PhoneIncoming, PhoneOutgoing, PhoneMissed, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatPhoneNumber } from "@/lib/utils/phone";
@@ -43,7 +43,10 @@ export function RecentCalls({ onSelect, className }: RecentCallsProps) {
 
     const getContactName = (phone: string | null | undefined): string | null => {
         if (!phone) return null;
-        const normalized = phone.replace(/[\s\-\(\)]/g, "");
+        let normalized = phone.replace(/[\s\-\(\)]/g, "");
+        if (normalized.startsWith("whatsapp:")) {
+            normalized = normalized.replace("whatsapp:", "");
+        }
         return contactMap.get(normalized) || null;
     };
 
@@ -82,11 +85,17 @@ export function RecentCalls({ onSelect, className }: RecentCallsProps) {
                         const apiContactName = isOutbound ? call.destinationContactName : call.sourceContactName;
                         const contactName = apiContactName || getContactName(phoneNumber);
                         const isMissed = call.status === "missed";
+                        const isWhatsApp = phoneNumber?.startsWith("whatsapp:");
 
                         if (!phoneNumber) return null;
 
                         // Choose icon based on status and direction
-                        const IconComponent = isMissed ? PhoneMissed : (isOutbound ? PhoneOutgoing : PhoneIncoming);
+                        let IconComponent;
+                        if (isWhatsApp) {
+                            IconComponent = MessageCircle;
+                        } else {
+                            IconComponent = isMissed ? PhoneMissed : (isOutbound ? PhoneOutgoing : PhoneIncoming);
+                        }
 
 
                         // Get color value for inline style (more reliable)
@@ -97,14 +106,14 @@ export function RecentCalls({ onSelect, className }: RecentCallsProps) {
                             failed: "#6b7280",   // gray-500
                             initiated: "#2563eb", // blue-600
                         };
-                        const inlineColor = colorMap[call.status] || "#6b7280";
+                        const inlineColor = isWhatsApp ? "#25D366" : (colorMap[call.status] || "#6b7280"); // Use WhatsApp Green
 
                         return (
                             <Button
                                 key={call.id}
                                 variant="ghost"
                                 className="w-full justify-start h-auto py-3 px-4 hover:bg-white/20 rounded-3xl border border-transparent hover:border-white/20 transition-all duration-300 font-normal group"
-                                onClick={() => onSelect(phoneNumber)}
+                                onClick={() => onSelect(phoneNumber.replace("whatsapp:", ""))}
                             >
                                 <div className="flex items-center gap-3 w-full">
                                     <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 bg-white/20 border border-white/10 shadow-sm group-hover:scale-110 transition-transform duration-300">
@@ -113,7 +122,7 @@ export function RecentCalls({ onSelect, className }: RecentCallsProps) {
                                     <div className="flex flex-col items-start min-w-0 flex-1">
                                         <span className="text-sm font-semibold truncate w-full text-left text-slate-700">{contactName || formatPhoneNumber(phoneNumber)}</span>
                                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                                            <span>{isOutbound ? "Outbound" : "Inbound"}</span>
+                                            <span>{isOutbound ? "Outgoing" : "Incoming"}</span>
                                             {call.startedAt && (
                                                 <>
                                                     <span className="opacity-50">•</span>

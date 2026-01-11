@@ -33,6 +33,7 @@ export type CallRecord = {
 export type ListUserCallsParams = {
   direction?: string;
   status?: string;
+  channel?: string;
   fromDate?: string; // ISO date string
   toDate?: string;   // ISO date string
   limit?: number;
@@ -43,6 +44,7 @@ export async function listUserCalls(params: ListUserCallsParams = {}): Promise<C
   const qs = new URLSearchParams();
   if (params.direction) qs.set("direction", params.direction);
   if (params.status) qs.set("status", params.status);
+  if (params.channel) qs.set("channel", params.channel);
   if (params.fromDate) qs.set("from_date", params.fromDate);
   if (params.toDate) qs.set("to_date", params.toDate);
   if (typeof params.limit === "number") qs.set("limit", String(params.limit));
